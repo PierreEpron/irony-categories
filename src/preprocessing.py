@@ -1,20 +1,20 @@
 import pandas as pd
 import re
 
-HASHTAG_PATTERN = re.compile(r'#(irony|sarcasm|not)', flags=re.I)
-URL_PATTERN = re.compile("^https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)$", flags=re.I)
+HASHTAG_LABELS_PATTERN = re.compile(r'#(irony|sarcasm)', flags=re.I)
+HASHTAG_NOT_PATTERN = re.compile(r'#not', flags=re.I)
+URL_PATTERN = re.compile("https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)", flags=re.I)
 USER_PATTERN = re.compile(r'@[^\s]+', flags=re.I)
 SPACES_PATTERN = re.compile(r'\s+')
 
-
-
 def load_semeval_taskb(
         return_sets : str = 'all', 
-        hashtags = '', 
+        hashtag_labels = ' ', 
+        hashtag_nots = 'not',
         users='@user', 
-        urls = '', 
+        urls = ' ', 
         spaces = ' ', 
-        lower = ''
+        lower = True
     ):
     """ Load and preprocess example for semeval taskb. 
 
@@ -40,28 +40,33 @@ def load_semeval_taskb(
     train['example_id'] = train.example_id.apply(lambda x: f"train_{x}")
     test['example_id'] = test.example_id.apply(lambda x: f"test_{x}")
 
-    # If `hashtags` not false, replace #irony #sarcasm #not by `hashtags` for each example
-    if hashtags:
-        train.text = train.text.apply(lambda x: HASHTAG_PATTERN.sub(hashtags, x))
-        test.text = test.text.apply(lambda x: HASHTAG_PATTERN.sub(hashtags, x))
+    # If `hashtags` not false, replace #irony #sarcasm by `hashtags` for each example
+    if hashtag_labels != False:
+        train.text = train.text.apply(lambda x: HASHTAG_LABELS_PATTERN.sub(hashtag_labels, x))
+        test.text = test.text.apply(lambda x: HASHTAG_LABELS_PATTERN.sub(hashtag_labels, x))
+
+    # If `hashtag_nots` not false, replace #not by `hashtag_nots` for each example
+    if hashtag_nots != False:
+        train.text = train.text.apply(lambda x: HASHTAG_NOT_PATTERN.sub(hashtag_nots, x))
+        test.text = test.text.apply(lambda x: HASHTAG_NOT_PATTERN.sub(hashtag_nots, x))
 
     # If `users` not false, replace urls by `urls` for each example
-    if users:
+    if users != False:
         train.text = train.text.apply(lambda x: USER_PATTERN.sub(users, x))
         test.text = test.text.apply(lambda x: USER_PATTERN.sub(users, x))
 
     # If `urls` not false, replace urls by `urls` for each example
-    if urls:
+    if urls != False:
         train.text = train.text.apply(lambda x: URL_PATTERN.sub(urls, x))
         test.text = test.text.apply(lambda x: URL_PATTERN.sub(urls, x))
 
     # If `spaces` not false, replace double spaces by `spaces` for each example
-    if spaces:
-        train.text = train.text.apply(lambda x: SPACES_PATTERN.sub(spaces, x))
-        test.text = test.text.apply(lambda x: SPACES_PATTERN.sub(spaces, x))
+    if spaces != False:
+        train.text = train.text.apply(lambda x: SPACES_PATTERN.sub(spaces, x).strip())
+        test.text = test.text.apply(lambda x: SPACES_PATTERN.sub(spaces, x).strip())
 
     # If `lower` not false, lower each example
-    if lower:
+    if lower != False:
         train.text = train.text.apply(lambda x: x.lower())
         test.text = test.text.apply(lambda x: x.lower())
 
