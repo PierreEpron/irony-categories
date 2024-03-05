@@ -246,7 +246,7 @@ trainer = Trainer(
     max_epochs=script_args.num_train_epochs,
     log_every_n_steps=script_args.log_every_n_steps,
     # Rework path
-    logger=get_plt_loggers(str(output_dir), str(output_dir).split('/')[-1]),
+    logger=get_plt_loggers(output_dir, str(output_dir).split('/')[-1]),
     callbacks=[early_stopping],
     accelerator=script_args.accelerator, 
     devices=script_args.devices
