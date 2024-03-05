@@ -21,9 +21,8 @@ import torch
 from accelerate import init_empty_weights
 
 from src.preprocessing import load_semeval_taskb
-from src.utils import write_jsonl
+from src.utils import write_jsonl, get_hf_token
 from src.model import load_clm
-
 
 @dataclass(frozen=True)
 class ScriptArguments:
@@ -202,7 +201,7 @@ class MultiHeadCLM(LightningModule):
         return optimizer
 
 
-tokenizer = AutoTokenizer.from_pretrained(script_args.model_name, padding_side="left")
+tokenizer = AutoTokenizer.from_pretrained(script_args.model_name, padding_side="left", token=get_hf_token())
 tokenizer.add_special_tokens({'sep_token':'<SEP>', 'pad_token':'<PAD>', 'cls_token':'<CLS>', 'mask_token':'<MASK>'})
 tokenizer.use_default_system_prompt = False
 
