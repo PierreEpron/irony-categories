@@ -29,7 +29,7 @@ from src.model import load_clm
 class ScriptArguments:
     # model
     model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf", metadata={"help": "the model name"})
-    empty_weight: Optional[bool] = field(default=False, metadata= {"help": "If true init the model with empty_weight"})
+    empty_weight: Optional[bool] = field(default=False, metadata= {"help": "if true init the model with empty_weight"})
     max_len: Optional[int] = field(default=105, metadata={"help":"drop example that have more token than max_len after tokenization"})
 
     # b&b args
@@ -42,11 +42,10 @@ class ScriptArguments:
     learning_rate: Optional[float] = field(default=1.41e-5, metadata={"help": "the learning rate"})
     num_train_epochs: Optional[int] = field(default=50, metadata={"help": "the number of training epochs"})
     log_every_n_steps: Optional[int] = field(default=1, metadata={"help": "step interval for logging"})
-    accelerator: Optional[str] = field(default="gpu", metadata={"help": "accelerator to use"}), 
-    devices: Optional[int] = field(default=1, metadata={"help": "amount of device to use"}), 
-
+    accelerator: Optional[str] = field(default="gpu", metadata={"help": "accelerator to use"})
+    devices: Optional[int] = field(default=1, metadata={"help": "amount of device to use"})
     # early stopping args
-    early_stopping_monitor: Optional[str] = field(default="val_loss", metadata={"help": "the value to monitor for validation loop"}), 
+    early_stopping_monitor: Optional[str] = field(default="val_loss", metadata={"help": "the value to monitor for validation loop"})
     early_stopping_min_delta: Optional[float] = field(default=0.0, metadata="how much the specified metric must improve to satisfy early stopping conditions.")
     early_stopping_patience: Optional[int] = field(default=5, metadata="stop training when the specified metric worsens for early_stopping_patience evaluation calls")
     early_stopping_mode: Optional[str] = field(default="min", metadata={"help": "the value to monitor for validation loop"})
