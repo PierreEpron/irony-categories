@@ -220,8 +220,8 @@ with torch.no_grad():
         scores = act_func(outputs.logits)
         results.append(
            {
-              'example_id': batch[0]['example_id'],
-              'label_id': batch[0]['label_id'].cpu().item(),
+              'example_id': batch['example_id'][0],
+              'label_id': batch['label_id'][0].cpu().item(),
               'scores': scores.cpu().tolist(),
               'pred': scores.argmax(dim=1).cpu().item()
            }
