@@ -131,7 +131,7 @@ def collate(tokenizer, extra_columns=False):
         collated_batch = {
             'label_id': torch.tensor(collate_key(batch, 'label_id')),
             'input_ids': torch.LongTensor(pad_key(batch, 'input_ids', tokenizer.pad_token_id)),
-            'attention_mask': pad_key(batch, 'attention_mask', 0),
+            'attention_mask': torch.LongTensor(pad_key(batch, 'attention_mask', 0)),
         }
 
         if extra_columns:
