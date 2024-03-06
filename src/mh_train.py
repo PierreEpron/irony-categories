@@ -73,7 +73,10 @@ script_args = ScriptArguments()
 
 
 train, test = load_semeval_taskb(return_sets='splits', urls=False, lower=False)
-label_weigths = torch.tensor((train.label_id.value_counts() / len(train)).values).to(dtype=torch_dtype)
+
+# from https://scikit-learn.org/stable/modules/generated/sklearn.utils.class_weight.compute_class_weight.html
+label_weigths = (len(train) / (train.label_id.nunique() * train.label_id.value_counts())).values 
+label_weigths = torch.tensor(label_weigths).to(dtype=torch_dtype)
 
 
 ##### Load/Create Model #####
