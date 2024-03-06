@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Union
+from tqdm import tqdm
 
 from transformers import (
     AutoTokenizer,
@@ -214,7 +215,7 @@ act_func = torch.nn.Softmax(dim=1)
 results = []
 
 with torch.no_grad():
-    for batch in loader:
+    for batch in tqdm(loader):
         outputs = mh_model(**batch)
         scores = act_func(outputs.logits)
         results.append(
