@@ -1,6 +1,9 @@
 import pandas as pd
 import re
 
+from torch.utils.data import DataLoader
+import torch
+
 HASHTAG_LABELS_PATTERN = re.compile(r'#(irony|sarcasm)', flags=re.I)
 HASHTAG_NOT_PATTERN = re.compile(r'#not', flags=re.I)
 URL_PATTERN = re.compile("https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)", flags=re.I)
@@ -83,5 +86,75 @@ def load_semeval_taskb(
 
     # If `return_sets` is 'all' return the train test concatenation and train and test independantly
     return full, train, test
+
+
+def preprocess_example(tokenizer, example, max_len):
+
+    turns = [
+        {"role": "user", "content": example['text'].strip()},
+    ]
+
+    input_ids = tokenizer.apply_chat_template(turns)
+
+    if len(input_ids) > max_len:
+        return None
+
+    return {
+        'example_id': example['example_id'],
+        'text': tokenizer.decode(input_ids),
+        'label_id': example['label_id'],
+    }
+
+
+def preprocess_examples(tokenizer, examples, max_len):
+
+    examples = [preprocess_example(tokenizer, example, max_len) for example in examples.to_dict(orient='records')]
+    return [example for example in examples if example]
+
+    # test = [preprocess(example, script_args.max_len) for example in test.to_dict(orient='records')]
+    # test = [example for example in test if example]
+
+
+def collate_key(batch, key):
+  return [ex[key] for ex in batch]
+
+
+def pad_key(batch, key, pad_value):
+    collated = collate_key(batch, key)
+    max_len = max([len(ex) for ex in collated])
+    return [[pad_value] * (max_len - len(ex)) + ex for ex in collated]
+
+
+def collate(tokenizer, extra_columns=False):
+    def wrapped_collate(batch):
+        
+        collated_batch = {
+            'label_id': torch.tensor(collate_key(batch, 'label_id')),
+            'input_ids': torch.LongTensor(pad_key(batch, 'input_ids', tokenizer.pad_token_id)),
+            'attention_mask': pad_key(batch, 'attention_mask', 0),
+        }
+
+        if extra_columns:
+
+            collated_batch.update({
+                'example_id': collate_key(batch, 'example_id'), 'text': collate_key(batch, 'text')
+            })
+            
+        return collated_batch
+        
+    return wrapped_collate
+
+
+def make_loader(dataset, tokenizer, batch_size, extra_columns=False, shuffle=True):
+    '''
+        Create dataset, tokenize examples, filter example by max_len, pad examples then return a loader.
+    '''
+    return DataLoader(
+        dataset, 
+        batch_size=batch_size, 
+        collate_fn=collate(tokenizer, extra_columns=extra_columns), 
+        shuffle=shuffle
+    )
+
 
 
