@@ -69,7 +69,7 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
         )
         # print("outputs.hidden_states[self.hidden_states_idx]: ", outputs['hidden_states'][-1].shape)
 
-        logits = self.score(outputs.hidden_states[self.hidden_states_idx])
+        logits = self.score(outputs['hidden_states'][self.hidden_states_idx])
         # print("logits: ", logits.shape, logits.dtype)
 
         pooled_logits = logits[:, self.cls_token_idx]
