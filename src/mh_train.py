@@ -108,7 +108,7 @@ tokenizer, model = load_mh(
 
 
 # TODO: Find better way
-train, test = preprocess_examples(tokenizer, train, script_args.max_len), preprocess_examples(tokenizer, script_args.max_len)
+train, test = preprocess_examples(tokenizer, train, script_args.max_len), preprocess_examples(tokenizer, test, script_args.max_len)
 
 # TODO: Shuffle for multiple runs
 train_set = Dataset.from_list(train[len(test):]).map(lambda x: tokenizer(x['text']))
