@@ -148,7 +148,7 @@ class MultiHeadCLM(nn.Module):
         )
     
 mh_model = MultiHeadCLM(clm_model)
-mh_model = PeftModel.from_pretrained(mh_model, "results/llama7b_chat_mh_cls")
+mh_model = PeftModel.from_pretrained(mh_model, script_args.output_dir)
 mh_model = mh_model.to(torch_dtype)
 
 def preprocess(example, max_len):
