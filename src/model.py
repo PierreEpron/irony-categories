@@ -77,8 +77,7 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
         labels = torch.nn.functional.one_hot(label_id, num_classes=self.num_labels).to(pooled_logits.device, pooled_logits.dtype)
         # print("labels: ", labels.shape, labels.dtype)
 
-        loss_fct = self.loss_fct(self.label_weights)
-        loss = loss_fct(pooled_logits, labels)
+        loss = self.loss_fct(pooled_logits, labels)
 
         return SequenceClassifierOutputWithPast(
             loss=loss,
