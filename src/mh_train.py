@@ -94,7 +94,7 @@ lora_config = LoraConfig(
 )
 
 tokenizer, model = load_mh(
-   model_name=script_args.model_name,
+   clm_model_name=script_args.model_name,
    quantization_config=quantization_config,
    lora_config=lora_config,
    label_weigths=label_weigths,
