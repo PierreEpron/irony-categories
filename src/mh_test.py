@@ -20,7 +20,7 @@ from torch.utils.data import DataLoader
 import torch
 
 from src.preprocessing import load_semeval_taskb
-from src.utils import get_hf_token
+from src.utils import get_hf_token, write_jsonl
 
 import os
 
@@ -226,3 +226,5 @@ with torch.no_grad():
               'pred': scores.argmax(dim=1).cpu().item()
            }
         )
+
+write_jsonl(script_args.output_dir + "/predictions.jsonl", results)
