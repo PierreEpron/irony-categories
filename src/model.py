@@ -47,8 +47,6 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
         labels: Optional[torch.LongTensor] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = None,
-        return_dict: Optional[bool] = None,
         label_id: Optional[torch.LongTensor] = None,
     ) -> Union[Tuple, SequenceClassifierOutputWithPast]:
 
@@ -64,8 +62,8 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
             labels=labels,
             use_cache=use_cache,
             output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
+            output_hidden_states=True,
+            return_dict=True,
         )
         # print("outputs.hidden_states[self.hidden_states_idx]: ", outputs['hidden_states'][-1].shape)
 
