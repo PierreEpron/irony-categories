@@ -216,7 +216,7 @@ results = []
 
 with torch.no_grad():
     for batch in tqdm(loader):
-        outputs = mh_model(**batch)
+        outputs = mh_model(input_ids=batch['input_ids'], attention_mask=batch['attention_mask'], label_id=batch['label_id'])
         scores = act_func(outputs.logits)
         results.append(
            {
