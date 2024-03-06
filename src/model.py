@@ -50,7 +50,7 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
-        label_ids: Optional[torch.LongTensor] = None,
+        label_id: Optional[torch.LongTensor] = None,
     ) -> Union[Tuple, SequenceClassifierOutputWithPast]:
 
         # print("input_ids: ", input_ids.shape, input_ids.dtype)
@@ -68,7 +68,7 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             cache_position=cache_position,
-            label_ids=label_ids,
+            label_id=label_id,
         )
         # print("outputs.hidden_states[self.hidden_states_idx]: ", outputs['hidden_states'][-1].shape)
 
@@ -79,7 +79,7 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
         # print("pooled_logits: ", pooled_logits.shape, pooled_logits.dtype)
 
         # TODO: Should be put elsewhere
-        labels = torch.nn.functional.one_hot(label_ids, num_classes=self.num_labels).to(pooled_logits.device, pooled_logits.dtype)
+        labels = torch.nn.functional.one_hot(label_id, num_classes=self.num_labels).to(pooled_logits.device, pooled_logits.dtype)
         # print("labels: ", labels.shape, labels.dtype)
 
         loss_fct = self.loss_fct(self.label_weights)
