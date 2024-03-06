@@ -66,7 +66,6 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            label_id=label_id,
         )
         # print("outputs.hidden_states[self.hidden_states_idx]: ", outputs['hidden_states'][-1].shape)
 
