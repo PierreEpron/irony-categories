@@ -61,8 +61,8 @@ class ScriptArguments:
     early_stopping_threshold: Optional[float] = field(default=0.0, metadata="how much the specified metric must improve to satisfy early stopping conditions.")
 
 
-torch_dtype=torch.bfloat16,  # TODO: Find a way to put it in args
-device_map={"":0},  # TODO: Find a way to put it in args
+torch_dtype=torch.bfloat16 # TODO: Find a way to put it in args
+device_map={"":0} # TODO: Find a way to put it in args
 
 
 # TODO: Save args
