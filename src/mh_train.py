@@ -38,8 +38,8 @@ class ScriptArguments:
     # lora args
     peft_lora_r: Optional[int] = field(default=64, metadata={"help": "the r parameter of the LoRA adapter"})
     peft_lora_alpha: Optional[int] = field(default=16, metadata={"help": "the alpha parameter of the LoRA adapter"})
-    peft_lora_bias: Optional[str] = field(default="none", metadata={"help":"use or not bias for the LoRA adapter"}),
-    peft_lora_dropout: Optional[float] = field(default=0.1, metadata={"help":"use or not dropout for the LoRA adapter"}),
+    peft_lora_bias: Optional[str] = field(default="none", metadata={"help":"use or not bias for the LoRA adapter"})
+    peft_lora_dropout: Optional[float] = field(default=0.1, metadata={"help":"use or not dropout for the LoRA adapter"})
 
     # training args
     output_dir: Optional[str] = field(default="results/llama7b_chat_mh_hf", metadata={"help": "the output directory"})
