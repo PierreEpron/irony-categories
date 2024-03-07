@@ -166,7 +166,7 @@ trainer.save_state()
 ##### Predictions #####
 
 
-loader = make_loader(test, tokenizer, 1, extra_columns=True, shuffle=False)
+loader = make_loader(test_set, tokenizer, 1, extra_columns=True, shuffle=False)
 
 model = trainer.model
 model.eval()
