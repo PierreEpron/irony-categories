@@ -1,36 +1,47 @@
 # -*- coding: utf-8 -*-
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Union
-from tqdm import tqdm
+import json
+from pathlib import Path
+from typing import Optional
 
 from transformers import (
-    AutoTokenizer,
-    AutoModelForCausalLM,
+    HfArgumentParser,
     BitsAndBytesConfig,
     TrainingArguments,
     EarlyStoppingCallback,
     Trainer
 )
 
-from transformers.modeling_outputs import SequenceClassifierOutputWithPast
-from peft import LoraConfig, get_peft_model
 from datasets import Dataset
-
-from torch import nn
+from peft import LoraConfig
+from tqdm import tqdm
 import torch
 
-from src.model import load_mh
 from src.preprocessing import load_semeval_taskb, make_loader, preprocess_examples, collate
 from src.utils import get_hf_token, write_jsonl
+from src.tools.split_data import get_split
+from src.model import load_mh
+
+
+ # TODO: Find a way to put them in args
+torch_dtype=torch.bfloat16
+device_map={"":0}
+target_modules=["q_proj", "v_proj"]
+modules_to_save=["score"]
 
 
 @dataclass
 class ScriptArguments:
     
-    # model
+    # main args
+    current_split: int = field(metadata={"help":"index used to load correct split with splits_path"})
+    splits_path: Optional[str] = field(default="data/sem_eval/splits.jsonl", metadata={"help":"path of differents data splits"})
+
+    # model args
     model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf" , metadata={"help": "the model name"})
     max_len: Optional[int] = field(default=105, metadata={"help":"drop example that have more token than max_len after tokenization"})
+    
     # b&b args
     load_in_8bit: Optional[bool] = field(default=False, metadata={"help": "load the model in 8 bits precision"})
     load_in_4bit: Optional[bool] = field(default=True, metadata={"help": "load the model in 4 bits precision"})
@@ -43,8 +54,8 @@ class ScriptArguments:
 
     # training args
     output_dir: Optional[str] = field(default="results/llama7b_chat_mh_hf", metadata={"help": "the output directory"})
-    do_eval: Optional[bool] = field(default=True, metadata="whether to run evaluation on the validation set or not.")
-    evaluation_strategy: Optional[str] = field(default="epoch", metadata="The evaluation strategy to adopt during training.")
+    do_eval: Optional[bool] = field(default=True, metadata={"help":"whether to run evaluation on the validation set or not."})
+    evaluation_strategy: Optional[str] = field(default="epoch", metadata={"help":"The evaluation strategy to adopt during training."})
     batch_size: Optional[int] = field(default=4, metadata={"help": "the batch size"})
     gradient_accumulation_steps: Optional[int] = field(default=1, metadata={"help": "the number of gradient accumulation steps"})
     learning_rate: Optional[float] = field(default=1.5e-4, metadata={"help": "the learning rate"})
@@ -53,21 +64,24 @@ class ScriptArguments:
     max_steps: Optional[int] = field(default=-1, metadata={"help": "the number of training steps"})
     save_steps: Optional[int] = field(default=100, metadata={"help": "Number of updates steps before checkpoint saves"})
     save_total_limit: Optional[int] = field(default=2, metadata={"help": "Limits total number of checkpoints."})
-    load_best_model_at_end: Optional[bool] = field(default=True, metadata="whether or not to load the best model found during training at the end of training.")
-    save_strategy: Optional[str] = field(default="epoch", metadata="The checkpoint save strategy to adopt during training.")
+    load_best_model_at_end: Optional[bool] = field(default=True, metadata={"help":"whether or not to load the best model found during training at the end of training."})
+    save_strategy: Optional[str] = field(default="epoch", metadata={"help":"The checkpoint save strategy to adopt during training."})
     
     # early stopping args
-    early_stopping_patience: Optional[int] = field(default=5, metadata="stop training when the specified metric worsens for early_stopping_patience evaluation calls")
-    early_stopping_threshold: Optional[float] = field(default=0.0, metadata="how much the specified metric must improve to satisfy early stopping conditions.")
+    early_stopping_patience: Optional[int] = field(default=5, metadata={"help":"stop training when the specified metric worsens for early_stopping_patience evaluation calls"})
+    early_stopping_threshold: Optional[float] = field(default=0.0, metadata={"help":"how much the specified metric must improve to satisfy early stopping conditions."})
 
 
-torch_dtype=torch.bfloat16 # TODO: Find a way to put it in args
-device_map={"":0} # TODO: Find a way to put it in args
+parser = HfArgumentParser([ScriptArguments])
+script_args = parser.parse_args_into_dataclasses()[0]
 
+script_args.output_dir = f"{script_args.output_dir}_{script_args.current_split}/"
 
-# TODO: Save args
-script_args = ScriptArguments()
+if not Path(script_args.output_dir).is_dir():
+    Path(script_args.output_dir).mkdir()
 
+(Path(script_args.output_dir) / "args.json").write_text(json.dumps(script_args.__dict__))
+ 
 
 ##### Load data & compute class weight #####
 
@@ -90,10 +104,10 @@ quantization_config = BitsAndBytesConfig(
 lora_config = LoraConfig(
     r=script_args.peft_lora_alpha,
     lora_alpha=script_args.peft_lora_r,
-    target_modules=["q_proj", "v_proj"], # TODO: Find a way to put it in args
+    target_modules=target_modules,
     lora_dropout=script_args.peft_lora_dropout,
     bias=script_args.peft_lora_bias,
-    modules_to_save=["score"], # TODO: Find a way to put it in args
+    modules_to_save=modules_to_save,
 )
 
 tokenizer, model = load_mh(
@@ -110,12 +124,11 @@ tokenizer, model = load_mh(
 ##### Data Preps #####
 
 
-# TODO: Find better way
 train, test = preprocess_examples(tokenizer, train, script_args.max_len), preprocess_examples(tokenizer, test, script_args.max_len)
+train, val = get_split(script_args.current_split, script_args.splits_path, train)
 
-# TODO: Shuffle for multiple runs
-train_set = Dataset.from_list(train[len(test):]).map(lambda x: tokenizer(x['text']))
-val_set = Dataset.from_list(train[:len(test)]).map(lambda x: tokenizer(x['text']))
+train_set = Dataset.from_list(train).map(lambda x: tokenizer(x['text']))
+val_set = Dataset.from_list(val).map(lambda x: tokenizer(x['text']))
 test_set = Dataset.from_list(test).map(lambda x: tokenizer(x['text']))
 
 print(len(train_set), len(val_set), len(test_set))
