@@ -123,9 +123,11 @@ tokenizer, model = load_mh(
 
 ##### Data Preps #####
 
-
-train, test = preprocess_examples(tokenizer, train, script_args.max_len), preprocess_examples(tokenizer, test, script_args.max_len)
 train, val = get_split(script_args.current_split, script_args.splits_path, train)
+
+train = preprocess_examples(tokenizer, train, script_args.max_len)
+val = preprocess_examples(tokenizer, val, script_args.max_len)
+test = preprocess_examples(tokenizer, test, script_args.max_len)
 
 train_set = Dataset.from_list(train).map(lambda x: tokenizer(x['text']))
 val_set = Dataset.from_list(val).map(lambda x: tokenizer(x['text']))
