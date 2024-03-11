@@ -39,7 +39,7 @@ class ScriptArguments:
     splits_path: Optional[str] = field(default="data/sem_eval/splits.jsonl", metadata={"help":"path of differents data splits"})
 
     # model args
-    model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf" , metadata={"help": "the model name"})
+    clm_model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf" , metadata={"help": "the model name"})
     max_len: Optional[int] = field(default=105, metadata={"help":"drop example that have more token than max_len after tokenization"})
     
     # b&b args
@@ -111,7 +111,7 @@ lora_config = LoraConfig(
 )
 
 tokenizer, model = load_mh(
-   clm_model_name=script_args.model_name,
+   clm_model_name=script_args.clm_model_name,
    quantization_config=quantization_config,
    lora_config=lora_config,
    label_weigths=label_weigths,
