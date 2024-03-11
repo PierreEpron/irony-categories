@@ -86,7 +86,7 @@ with torch.no_grad():
            {
               'example_id': batch['example_id'][0],
               'label_id': batch['label_id'][0].cpu().item(),
-              'text': batch['text'][0].cpu().item(),
+              'text': batch['text'][0],
               'scores': scores.cpu().tolist(),
               'pred': scores.argmax(dim=1).cpu().item()
            }
