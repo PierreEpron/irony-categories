@@ -1,71 +1,46 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Union
+from typing import Optional
 from tqdm import tqdm
 
 from transformers import (
+    HfArgumentParser,
     AutoTokenizer,
     AutoModelForCausalLM,
     BitsAndBytesConfig,
-    TrainingArguments,
-    EarlyStoppingCallback,
-    Trainer
 )
 
-from transformers.modeling_outputs import SequenceClassifierOutputWithPast
 from peft import PeftModel
 from datasets import Dataset
 
-from torch import nn
-from torch.utils.data import DataLoader
 import torch
 from src.model import MultiHeadCLM
 
 from src.preprocessing import load_semeval_taskb, make_loader, preprocess_examples
 from src.utils import get_hf_token, write_jsonl
 
-import os
 
 @dataclass
 class ScriptArguments:
     
+
     # model
-    model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf" , metadata={"help": "the model name"})
+    mh_model: str = field(metadata={"help": "the directory used to load mh_model"})
+    
+    clm_model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf" , metadata={"help": "the model name"})
     max_len: Optional[int] = field(default=105, metadata={"help":"drop example that have more token than max_len after tokenization"})
+    
     # b&b args
     load_in_8bit: Optional[bool] = field(default=False, metadata={"help": "load the model in 8 bits precision"})
     load_in_4bit: Optional[bool] = field(default=True, metadata={"help": "load the model in 4 bits precision"})
     
-    # lora args
-    peft_lora_r: Optional[int] = field(default=64, metadata={"help": "the r parameter of the LoRA adapter"})
-    peft_lora_alpha: Optional[int] = field(default=16, metadata={"help": "the alpha parameter of the LoRA adapter"})
-    peft_lora_bias: Optional[str] = field(default="none", metadata={"help":"use or not bias for the LoRA adapter"})
-    peft_lora_dropout: Optional[float] = field(default=0.1, metadata={"help":"use or not dropout for the LoRA adapter"})
 
-    # training args
-    output_dir: Optional[str] = field(default="results/llama7b_chat_mh_hf", metadata={"help": "the output directory"})
-    do_eval: Optional[bool] = field(default=True, metadata="whether to run evaluation on the validation set or not.")
-    evaluation_strategy: Optional[str] = field(default="epoch", metadata="The evaluation strategy to adopt during training.")
-    batch_size: Optional[int] = field(default=4, metadata={"help": "the batch size"})
-    gradient_accumulation_steps: Optional[int] = field(default=1, metadata={"help": "the number of gradient accumulation steps"})
-    learning_rate: Optional[float] = field(default=1.5e-4, metadata={"help": "the learning rate"})
-    logging_steps: Optional[int] = field(default=1, metadata={"help": "the number of logging steps"})
-    num_train_epochs: Optional[int] = field(default=10, metadata={"help": "the number of training epochs"})
-    max_steps: Optional[int] = field(default=-1, metadata={"help": "the number of training steps"})
-    save_steps: Optional[int] = field(default=100, metadata={"help": "Number of updates steps before checkpoint saves"})
-    save_total_limit: Optional[int] = field(default=2, metadata={"help": "Limits total number of checkpoints."})
-    load_best_model_at_end: Optional[bool] = field(default=True, metadata="whether or not to load the best model found during training at the end of training.")
-    save_strategy: Optional[str] = field(default="epoch", metadata="The checkpoint save strategy to adopt during training.")
-    
-    # early stopping args
-    early_stopping_patience: Optional[int] = field(default=5, metadata="stop training when the specified metric worsens for early_stopping_patience evaluation calls")
-    early_stopping_threshold: Optional[float] = field(default=0.0, metadata="how much the specified metric must improve to satisfy early stopping conditions.")
-
-
-script_args = ScriptArguments()
+parser = HfArgumentParser([ScriptArguments])
+script_args = parser.parse_args_into_dataclasses()[0]
 
 quantization_config = BitsAndBytesConfig(
     load_in_8bit=script_args.load_in_8bit, load_in_4bit=script_args.load_in_4bit
 )
+
 torch_dtype = torch.bfloat16
 device_map = {"": 0}
 
@@ -82,7 +57,6 @@ clm_model = AutoModelForCausalLM.from_pretrained(
     token=get_hf_token()
 )
 
-
 clm_model.config.pad_token_id = tokenizer.pad_token_id
 clm_model.resize_token_embeddings(len(tokenizer))
 
@@ -96,7 +70,7 @@ loader = make_loader(test_set, tokenizer, 1, extra_columns=True, shuffle=False)
 
     
 model = MultiHeadCLM(clm_model)
-model = PeftModel.from_pretrained(model, script_args.output_dir)
+model = PeftModel.from_pretrained(model, script_args.mh_model)
 model = model.to(torch_dtype)
 model.eval()
 
@@ -112,6 +86,7 @@ with torch.no_grad():
            {
               'example_id': batch['example_id'][0],
               'label_id': batch['label_id'][0].cpu().item(),
+              'text': batch['text'][0].cpu().item(),
               'scores': scores.cpu().tolist(),
               'pred': scores.argmax(dim=1).cpu().item()
            }
