@@ -78,6 +78,8 @@ act_func = torch.nn.Softmax(dim=1)
 
 results = []
 
+print(model.clm_model)
+
 with torch.no_grad():
     for batch in tqdm(loader):
         outputs = model(input_ids=batch['input_ids'], attention_mask=batch['attention_mask'], label_id=batch['label_id'])
@@ -92,4 +94,4 @@ with torch.no_grad():
            }
         )
 
-write_jsonl(script_args.output_dir + "/predictions.jsonl", results)
+write_jsonl(script_args.mh_model + "/predictions.jsonl", results)
