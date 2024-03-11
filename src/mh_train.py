@@ -176,32 +176,3 @@ trainer = Trainer(
 trainer.train()
 trainer.save_model(training_args.output_dir)
 trainer.save_state()
-
-
-##### Predictions #####
-
-
-loader = make_loader(test_set, tokenizer, 1, extra_columns=True, shuffle=False)
-
-model = trainer.model
-model.eval()
-
-act_func = torch.nn.Softmax(dim=1)
-
-results = []
-
-with torch.no_grad():
-    for batch in tqdm(loader):
-        outputs = model(input_ids=batch['input_ids'], attention_mask=batch['attention_mask'], label_id=batch['label_id'])
-        scores = act_func(outputs.logits)
-        results.append(
-           {
-              'example_id': batch['example_id'][0],
-              'label_id': batch['label_id'][0].cpu().item(),
-              'scores': scores.cpu().tolist(),
-              'pred': scores.argmax(dim=1).cpu().item()
-           }
-        )
-
-write_jsonl(script_args.output_dir + "/predictions.jsonl", results)
-
