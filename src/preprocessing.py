@@ -106,6 +106,14 @@ def preprocess_example(tokenizer, example, max_len):
     }
 
 
+def format_labeled_turns(tokenizer, label_id, turns, example):
+    turns = [{'role':turn['role'], 'content':turn['content'].format(**example)} for turn in turns[str(label_id)]]
+    input_ids = tokenizer.apply_chat_template(turns, return_tensors='pt').to('cuda')
+    if input_ids[0][-1] == tokenizer.eos_token_id:
+        input_ids = input_ids[...,:-1]
+    return input_ids
+
+
 def preprocess_examples(tokenizer, examples, max_len):
 
     examples = [preprocess_example(tokenizer, example, max_len) for example in examples.to_dict(orient='records')]

@@ -121,6 +121,9 @@ tokenizer, model = load_mh(
 )
 
 
+model.print_trainable_parameters()
+
+
 ##### Data Preps #####
 
 train, val = get_split(script_args.current_split, script_args.splits_path, train)

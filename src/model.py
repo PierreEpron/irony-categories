@@ -8,7 +8,7 @@ from transformers import (
     AutoModelForCausalLM
 )
 
-from peft import get_peft_model
+from peft import get_peft_model, PeftModel
 
 from torch import nn
 import torch
@@ -84,8 +84,15 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
             logits=pooled_logits
         )
     
+    def generate(
+        self,
+        input_ids,
+        generation_config
+    ):
+        return self.clm_model.generate(input_ids, generation_config=generation_config)
 
 def load_mh(
+        mh_model_name=None,
         clm_model_name=None,
         quantization_config=None,
         lora_config=None,
@@ -113,11 +120,14 @@ def load_mh(
     clm_model.config.pad_token_id = tokenizer.pad_token_id
     clm_model.resize_token_embeddings(len(tokenizer))
 
-
     mh_model = MultiHeadCLM(clm_model, label_weigths=label_weigths)
-    mh_model = get_peft_model(mh_model, lora_config)
+
+    if mh_model_name == None:
+        mh_model = get_peft_model(mh_model, lora_config)
+    else:
+        mh_model = PeftModel.from_pretrained(mh_model, mh_model_name)
+
     mh_model = mh_model.to(torch_dtype)
-    mh_model.print_trainable_parameters()
 
 
     return tokenizer, mh_model
