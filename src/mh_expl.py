@@ -138,4 +138,4 @@ with torch.no_grad():
 
     results.append(example)
 
-    write_jsonl("explanations.jsonl", results)
+    write_jsonl(script_args.mh_model_name + "/" + "explanations.jsonl", results)
