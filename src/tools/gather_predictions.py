@@ -9,7 +9,7 @@ for path in results_path.glob("*/predictions.jsonl"):
     dst = root_path / path.parts[-2]
     if not dst.is_dir():
         dst.mkdir()
-    shutil.copy(path, dst.with_name("predictions.jsonl"))
-    shutil.copy(path.with_name("trainer_state.json"), dst.with_name("trainer_state.json"))
+    shutil.copy(path, dst / "predictions.jsonl")
+    shutil.copy(path.with_name("trainer_state.json"), dst / "trainer_state.json")
 
 
