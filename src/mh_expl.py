@@ -102,7 +102,7 @@ results = []
 act_func = torch.nn.Softmax(dim=1)
 
 with torch.no_grad():
-  for batch in loader:
+  for batch in tqdm(loader):
 
     gold = batch['label_id'][0].cpu().item()
     text = batch['text'][0]
