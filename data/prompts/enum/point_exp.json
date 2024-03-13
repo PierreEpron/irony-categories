@@ -1,0 +1,13 @@
+{
+    "0" : [
+        {"role": "user", "content": "Explain why the following tweet does not express irony.\n\nTweet: {text}\n\nEnumerate clearly each point of your answer following this format:\n\n1. Point: Explaination.\n2. Point: Explaination."}
+    ],
+    "1" : [
+        {"role": "user", "content": "Given this definition: Irony by mean polarity contrast occurs when there is a switch in evaluation polarity between the literal and intended meanings of a statement.\nExplain why the following tweet expresses irony by polarity contrast.\n\nTweet: {text}\n\nEnumerate clearly each point of your answer following this format:\n\n1. Point: Explaination.\n2. Point: Explaination."}
+    ],
+    "2" : [
+        {"role": "user", "content": "Given this definition: Situational irony occurs when a situation contradicts expectations, often resulting in an unexpected outcome.\nExplain why the following tweet expresses situational irony.\n\nTweet: {text}\n\nEnumerate clearly each point of your answer following this format:\n\n1. Point: Explaination.\n2. Point: Explaination."}
+    ],
+    "3" : [
+        {"role": "user", "content": "Explain why the following tweet express irony.\n\nTweet: {text}\n\nEnumerate clearly each point of your answer following this format:\n\n1. Point: Explaination.\n2. Point: Explaination."}]
+}
