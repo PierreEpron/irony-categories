@@ -1,0 +1,18 @@
+{
+    "0" : [
+        {"role": "user", "content": "Explain why the following tweet does not express irony.\n\nTweet: {text}"},
+        {"role": "assistant", "content": "The following tweet does not express irony because"}
+    ],
+    "1" : [
+        {"role": "user", "content": "Given this definition: Irony by mean polarity contrast occurs when there is a switch in evaluation polarity between the literal and intended meanings of a statement.\nExplain why the following tweet expresses irony by polarity contrast.\n\nTweet: {text}"},
+        {"role": "assistant", "content": "The following tweet expresses irony by polarity contrast because"}
+    ],
+    "2" : [
+        {"role": "user", "content": "Given this definition: Situational irony occurs when a situation contradicts expectations, often resulting in an unexpected outcome.\nExplain why the following tweet expresses situational irony.\n\nTweet: {text}"},
+        {"role": "assistant", "content": "The following tweet expresses situational irony because"}
+    ],
+    "3" : [
+        {"role": "user", "content": "Explain why the following tweet express irony.\n\nTweet: {text}"},
+        {"role": "assistant", "content": "The following tweet expresses irony because"}
+    ]
+}
