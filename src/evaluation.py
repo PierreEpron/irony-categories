@@ -3,6 +3,12 @@ from sklearn.metrics import matthews_corrcoef
 
 import numpy as np
 
+ID_2_LABEL = {
+    0:"No Irony",
+    1:"Irony by Clash",
+    2:"Situational Irony",
+    3:"Other Irony"
+}
 
 ##### Fleiss Kappa ######
 
@@ -45,13 +51,14 @@ def get_A_B_fleiss_kappa(y_true, y_pred):
 
 ##### Evaluation Report #####
 
-def eval_report(y_true, y_pred):
+def eval_report(y_true, y_pred, id_2_label=ID_2_LABEL):
     ''' Shortcut to report all metrics for a given list of true labels and predicted labels'''
 
-    print(classification_report(y_true, y_pred))
+    print(classification_report(y_true, y_pred, target_names=list(id_2_label.values())))
     print("MCC:", matthews_corrcoef(y_true, y_pred))
     fleiss_A, fleiss_B = get_A_B_fleiss_kappa(y_true, y_pred)
     print("Fleiss K:")
     print("\tTask A:", fleiss_A)
     print("\tTask B:", fleiss_B)
-    ConfusionMatrixDisplay(confusion_matrix(y_true, y_pred)).plot() 
+    ConfusionMatrixDisplay(confusion_matrix(y_true, y_pred), display_labels=list(id_2_label.values())).plot(xticks_rotation="vertical") 
+
