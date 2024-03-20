@@ -19,7 +19,7 @@ import torch
 from src.model import MultiHeadCLM, load_mh
 
 from src.preprocessing import load_semeval_taskb, make_loader, preprocess_examples, format_labeled_turns
-from src.utils import get_hf_token, write_jsonl
+from src.utils import get_hf_token, read_jsonl, write_jsonl
 import warnings
 
 torch_dtype = torch.bfloat16
@@ -97,12 +97,16 @@ generation_config = GenerationConfig(
     repetition_penalty=1.2
 )
 
+results_path = script_args.mh_model_name + "/" + "explanations.jsonl"
 
-results = []
+results = read_jsonl(results_path)
 act_func = torch.nn.Softmax(dim=1)
 
 with torch.no_grad():
   for batch in tqdm(loader):
+
+    if len(list(filter(lambda x: x['example_id'] == batch['example_id'][0], results))) != 0:
+        continue
 
     gold = batch['label_id'][0].cpu().item()
     text = batch['text'][0]
