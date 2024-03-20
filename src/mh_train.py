@@ -121,9 +121,8 @@ tokenizer, model = load_mh(
    hf_token=get_hf_token()
 )
 
-
+model = model.to(script_args.device) 
 model.print_trainable_parameters()
-
 
 ##### Data Preps #####
 
