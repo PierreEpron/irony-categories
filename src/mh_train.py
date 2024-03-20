@@ -29,7 +29,7 @@ torch_dtype=torch.bfloat16
 device_map={"":0}
 target_modules=["q_proj", "v_proj"]
 modules_to_save=["score"]
-
+torch.set_default_device('cuda:0')
 
 @dataclass
 class ScriptArguments:
