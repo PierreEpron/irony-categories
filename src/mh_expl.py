@@ -52,14 +52,6 @@ if not (script_args.expl_from_gold or script_args.expl_from_pred):
     warnings.warn(f"One of expl_from_gold ({script_args.expl_from_gold}) or expl_from_pred ({script_args.expl_from_pred}) should be set to True. Otherwise no explaination prompt is used.")
 
 
-parser = HfArgumentParser([ScriptArguments])
-script_args = parser.parse_args_into_dataclasses()[0]
-
-
-if not (script_args.expl_from_gold or script_args.expl_from_pred):
-    warnings.warn(f"One of expl_from_gold ({script_args.expl_from_gold}) or expl_from_pred ({script_args.expl_from_pred}) should be set to True. Otherwise no explaination prompt is used.")
-
-
 quantization_config = BitsAndBytesConfig(
     load_in_8bit=script_args.load_in_8bit, load_in_4bit=script_args.load_in_4bit
 )
