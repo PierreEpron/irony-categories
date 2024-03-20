@@ -23,6 +23,8 @@ from src.utils import get_hf_token, write_jsonl
 from src.tools.split_data import get_split
 from src.model import load_mh
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
  # TODO: Find a way to put them in args
 torch_dtype=torch.bfloat16
