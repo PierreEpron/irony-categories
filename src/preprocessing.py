@@ -133,13 +133,13 @@ def pad_key(batch, key, pad_value):
     return [[pad_value] * (max_len - len(ex)) + ex for ex in collated]
 
 
-def collate(tokenizer, extra_columns=False):
+def collate(tokenizer, device="cuda", extra_columns=False):
     def wrapped_collate(batch):
         
         collated_batch = {
-            'label_id': torch.tensor(collate_key(batch, 'label_id')),
-            'input_ids': torch.LongTensor(pad_key(batch, 'input_ids', tokenizer.pad_token_id)),
-            'attention_mask': torch.LongTensor(pad_key(batch, 'attention_mask', 0)),
+            'label_id': torch.tensor(collate_key(batch, 'label_id')).to(device),
+            'input_ids': torch.LongTensor(pad_key(batch, 'input_ids', tokenizer.pad_token_id)).to(device),
+            'attention_mask': torch.LongTensor(pad_key(batch, 'attention_mask', 0)).to(device),
         }
 
         if extra_columns:
@@ -161,7 +161,8 @@ def make_loader(dataset, tokenizer, batch_size, extra_columns=False, shuffle=Tru
         dataset, 
         batch_size=batch_size, 
         collate_fn=collate(tokenizer, extra_columns=extra_columns), 
-        shuffle=shuffle
+        shuffle=shuffle,
+        generator=torch.Generator(device='cuda'),
     )
 
 
