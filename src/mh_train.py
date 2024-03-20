@@ -29,13 +29,13 @@ torch_dtype=torch.bfloat16
 device_map={"":0}
 target_modules=["q_proj", "v_proj"]
 modules_to_save=["score"]
-torch.set_default_device('cuda:0')
 
 @dataclass
 class ScriptArguments:
     
     # main args
     current_split: int = field(metadata={"help":"index used to load correct split with splits_path"})
+    device: Optional[str] = field(default="cuda:0", metadata={"help":"device to use"})
     splits_path: Optional[str] = field(default="data/sem_eval/splits.jsonl", metadata={"help":"path of differents data splits"})
 
     # model args
@@ -74,6 +74,8 @@ class ScriptArguments:
 
 parser = HfArgumentParser([ScriptArguments])
 script_args = parser.parse_args_into_dataclasses()[0]
+
+# torch.set_default_device(script_args.device)
 
 script_args.output_dir = f"{script_args.output_dir}_{script_args.current_split}/"
 
