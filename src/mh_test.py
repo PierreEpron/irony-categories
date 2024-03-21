@@ -24,7 +24,6 @@ device_map = {"": 0}
 
 @dataclass
 class ScriptArguments:
-    
 
     # model
     mh_model_name: str = field(metadata={"help": "the directory used to load mh_model"})
@@ -79,4 +78,4 @@ with torch.no_grad():
            }
         )
 
-write_jsonl(script_args.mh_model + "/predictions.jsonl", results)
+write_jsonl(script_args.mh_model_name + "/predictions.jsonl", results)
