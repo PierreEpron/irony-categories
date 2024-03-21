@@ -161,8 +161,7 @@ def make_loader(dataset, tokenizer, batch_size, extra_columns=False, shuffle=Tru
         dataset, 
         batch_size=batch_size, 
         collate_fn=collate(tokenizer, extra_columns=extra_columns), 
-        shuffle=shuffle,
-        generator=torch.Generator(device='cuda'),
+        shuffle=shuffle
     )
 
 
