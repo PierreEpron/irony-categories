@@ -69,7 +69,7 @@ clm_model.config.pad_token_id = tokenizer.pad_token_id
 ##### Examples #####
 
 def format_turns(turns, example):
-  return [{'role':turns['role'], 'content':turns['content'].format(**example)}]
+  return [{'role':turn['role'], 'content':turn['content'].format(**example)} for turn in turns]
 
 examples = load_semeval_taskb(return_sets='full', urls=False, lower=False)
 examples = examples.to_dict(orient='records')
