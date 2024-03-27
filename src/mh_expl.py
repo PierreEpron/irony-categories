@@ -81,11 +81,11 @@ else:
 
 
 generation_config = GenerationConfig(
-    max_new_tokens=1024,
+    max_new_tokens=512,
     do_sample=True,
     temperature=0.6,
     top_p=0.9,
-    top_k=60,
+    top_k=50,
     repetition_penalty=1.2
 )
 
