@@ -36,8 +36,8 @@ class ScriptArguments:
 
   # generation args  
 
-  max_new_tokens: Optional[int] = field(default=16, metadata={"help": "maximum of new tokens to generate"}),
-  do_sample: Optional[int] = field(default=False, metadata={"help": "use or not a sampling decoder"}),
+  max_new_tokens: Optional[int] = field(default=16, metadata={"help": "maximum of new tokens to generate"})
+  do_sample: Optional[int] = field(default=False, metadata={"help": "use or not a sampling decoder"})
 
   # b&b args
   load_in_8bit: Optional[bool] = field(default=False, metadata={"help": "load the model in 8 bits precision"})
