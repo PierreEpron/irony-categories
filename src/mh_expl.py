@@ -90,9 +90,11 @@ generation_config = GenerationConfig(
     repetition_penalty=1.2
 )
 
-results_path = script_args.mh_model_name + "/" + "enum_explanations.jsonl"
+results_path = Path(script_args.mh_model_name + "/" + "enum_explanations.jsonl")
 
-results = read_jsonl(results_path)
+if results_path.is_file():
+    results = read_jsonl(results_path)
+
 act_func = torch.nn.Softmax(dim=1)
 
 with torch.no_grad():
@@ -135,4 +137,4 @@ with torch.no_grad():
 
     results.append(example)
 
-    write_jsonl(script_args.mh_model_name + "/" + "explanations.jsonl", results)
+    write_jsonl(results_path, results)
