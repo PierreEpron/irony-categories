@@ -83,7 +83,7 @@ generation_config = GenerationConfig(
 
 ##### Turns #####
 
-target_labels = script_args.target_labels.split(' ')
+target_labels = [int(t) for t in script_args.target_labels.split(' ')]
 
 label_ids = tokenizer.encode(
    script_args.logits_labels, 
