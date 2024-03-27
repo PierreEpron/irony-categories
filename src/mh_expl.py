@@ -90,7 +90,7 @@ generation_config = GenerationConfig(
     repetition_penalty=1.2
 )
 
-results_path = script_args.mh_model_name + "/" + "explanations.jsonl"
+results_path = script_args.mh_model_name + "/" + "enum_explanations.jsonl"
 
 results = read_jsonl(results_path)
 act_func = torch.nn.Softmax(dim=1)
