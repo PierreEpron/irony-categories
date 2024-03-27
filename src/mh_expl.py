@@ -91,9 +91,7 @@ generation_config = GenerationConfig(
 )
 
 results_path = Path(script_args.mh_model_name + "/" + "enum_explanations.jsonl")
-
-if results_path.is_file():
-    results = read_jsonl(results_path)
+results = read_jsonl(results_path) if results_path.is_file() else []
 
 act_func = torch.nn.Softmax(dim=1)
 
