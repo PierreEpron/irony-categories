@@ -67,10 +67,11 @@ tokenizer, model = load_mh(
 model.eval()
 
 
-_, test = load_semeval_taskb(return_sets='splits', urls=False, lower=False)
-test = preprocess_examples(tokenizer, test, script_args.max_len)
-test_set = Dataset.from_list(test).map(lambda x: tokenizer(x['text']))
-loader = make_loader(test_set, tokenizer, 1, extra_columns=True, shuffle=False)
+train, test = load_semeval_taskb(return_sets='splits', urls=False, lower=False)
+examples = preprocess_examples(tokenizer, train, script_args.max_len)
+examples += preprocess_examples(tokenizer, test, script_args.max_len)
+examples = Dataset.from_list(examples).map(lambda x: tokenizer(x['text']))
+loader = make_loader(examples, tokenizer, 1, extra_columns=True, shuffle=False)
 
 
 prompt_path = Path(script_args.prompt_path)
