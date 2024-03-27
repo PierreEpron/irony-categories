@@ -112,7 +112,7 @@ with torch.no_grad():
 
       ##### Encode examples #####
 
-      input_ids = torch.tensor([format_turns(turns, example)]).to(clm_model.device)
+      input_ids = tokenizer.apply_chat_template(format_turns(turns, example), return_tensors="pt").to(clm_model.device)
 
       ##### Generate answer (opened anwser) #####
 
