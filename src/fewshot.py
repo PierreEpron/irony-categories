@@ -28,8 +28,8 @@ class ScriptArguments:
   output_path: str = field(metadata={"help":"the path used to save outputs."})
 
   # labels 
-  target_labels: Optional[List[str]] = field(default=[0,1,2,3], metadata={"help":"the examples used will first filter using target_labels."})
-  logits_labels: Optional[List[str]] = field(default='yes no Yes No', metadata={"help":"a string that will be encoded by the tokenizer. Token IDs will be used to pre-select logits to score."})
+  target_labels: Optional[str] = field(default="0 1 2 3", metadata={"help":"the examples used will first filter using target_labels."})
+  logits_labels: Optional[str] = field(default='yes no Yes No', metadata={"help":"a string that will be encoded by the tokenizer. Token IDs will be used to pre-select logits to score."})
 
   # model
   clm_model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf" , metadata={"help": "the model name"})
@@ -74,19 +74,23 @@ def format_turns(turns, example):
 examples = load_semeval_taskb(return_sets='full', urls=False, lower=False)
 examples = examples.to_dict(orient='records')
 
-label_ids = tokenizer.encode(
-   script_args.logits_labels, 
-   add_special_tokens=False, 
-   return_tensors='pt'
-)
-label_ids = label_ids[0].to(clm_model.device)
-
 generation_config = GenerationConfig(
     max_new_tokens=script_args.max_new_tokens,
     do_sample=script_args.do_sample,
     eos_token_id=tokenizer.eos_token_id,
     pad_token_id=tokenizer.pad_token_id
 )
+
+##### Turns #####
+
+target_labels = script_args.target_labels.split(' ')
+
+label_ids = tokenizer.encode(
+   script_args.logits_labels, 
+   add_special_tokens=False, 
+   return_tensors='pt'
+)
+label_ids = label_ids[0].to(clm_model.device)
 
 ##### Turns #####
 
@@ -103,7 +107,7 @@ clm_model.eval()
 with torch.no_grad():
   for example in tqdm(examples):
       
-      if example['label_id'] not in script_args.target_labels:
+      if example['label_id'] not in target_labels:
         continue
 
       ##### Encode examples #####
