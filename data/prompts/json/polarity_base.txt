@@ -1,0 +1,20 @@
+The following tweet expresses irony through a polarity contrast.
+It means that there is an evaluative expression whose polarity (positive, negative) is reversed between the literal evaluation and the intended evaluation.
+
+Tweet: "{text}"
+
+Fill in the following json taking into account the previous definition.
+The two fields ending with “Evaluation Polarity” must be filled with one of these two strings: “Positive”, “Negative”.
+The “Positive clause” field must be filled in with a string extracted from the tweet and representing the positive evaluative expression of the contrast.
+The Negative clause” field must be filled in with a string extracted from the tweet and representing the negative evaluative expression of the contrast.
+
+```json
+{{
+  "Positive Clause": "",
+  "Negative Clause": "",
+  "Literal Evaluation Polarity": "",
+  "Intented Evaluation Polarity": ""
+}}
+```
+
+You must respond with json code only. Do not provide any explanations. Do not provide any introductory text.
