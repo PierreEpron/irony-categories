@@ -91,7 +91,9 @@ with torch.no_grad():
 
     outputs = model.generate(
         input_ids,
-        generation_config
+        generation_config,
+        eos_token_id=tokenizer.eos_token_id,
+        pad_token_id=tokenizer.pad_token_id
     )
 
     example['prompt'] = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
