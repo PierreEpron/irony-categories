@@ -1,26 +1,19 @@
 from dataclasses import dataclass, field
-import json
 from pathlib import Path
 from typing import Optional
 from tqdm import tqdm
 
 from transformers import (
     HfArgumentParser,
-    AutoTokenizer,
-    AutoModelForCausalLM,
     GenerationConfig,
     BitsAndBytesConfig,
 )
 
-from peft import PeftModel
-from datasets import Dataset
-
 import torch
-from src.model import MultiHeadCLM, load_mh
+from src.model import load_mh
 
-from src.preprocessing import load_semeval_taskb, make_loader, preprocess_examples, format_labeled_turns
+from src.preprocessing import load_semeval_taskb
 from src.utils import get_hf_token, read_jsonl, write_jsonl
-import warnings
 
 torch_dtype = torch.bfloat16
 device_map = {"": 0}
