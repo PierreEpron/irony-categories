@@ -7,6 +7,8 @@ from transformers import (
     HfArgumentParser,
     GenerationConfig,
     BitsAndBytesConfig,
+    AutoTokenizer,
+    AutoModelForCausalLM
 )
 
 import torch
@@ -43,15 +45,29 @@ quantization_config = BitsAndBytesConfig(
     load_in_8bit=script_args.load_in_8bit, load_in_4bit=script_args.load_in_4bit
 )
 
-tokenizer, model = load_mh(
-    mh_model_name=script_args.mh_model_name,
-    clm_model_name=script_args.clm_model_name,
+# tokenizer, model = load_mh(
+#     mh_model_name=script_args.mh_model_name,
+#     clm_model_name=script_args.clm_model_name,
+#     quantization_config=quantization_config,
+#     torch_dtype=torch_dtype,
+#     device_map=device_map,
+#     hf_token=get_hf_token()
+# )
+# model.eval()
+
+tokenizer = AutoTokenizer.from_pretrained(script_args.clm_model_name, padding_side="left", token=get_hf_token())
+tokenizer.use_default_system_prompt = False
+
+clm_model = AutoModelForCausalLM.from_pretrained(
+    script_args.clm_model_name,
     quantization_config=quantization_config,
-    torch_dtype=torch_dtype,
     device_map=device_map,
-    hf_token=get_hf_token()
+    torch_dtype=torch_dtype,
+    token=get_hf_token()
 )
-model.eval()
+
+clm_model.config.pad_token_id = tokenizer.pad_token_id
+clm_model.resize_token_embeddings(len(tokenizer))
 
 
 _, examples = load_semeval_taskb(return_sets='splits', urls=False, lower=False)
@@ -84,7 +100,7 @@ with torch.no_grad():
 
     input_ids = tokenizer.apply_chat_template(format_turns(prompt, example), return_tensors="pt").to(model.clm_model.device)
 
-    outputs = model.clm_model.generate(
+    outputs = clm_model.generate(
         input_ids,
         generation_config
     )
