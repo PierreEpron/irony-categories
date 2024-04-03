@@ -10,15 +10,15 @@ Fill in the following json taking into account the previous definition and the f
   - The “External Knowledge” field should be populated with a list of strings. Each string should describe the non-lexicalized knowledge you use to understand the irony of the tweet. Leave it blank if there is none.
 
 ```json
-{
-  "Non-Verbal Irony": {
-    "Situational Irony": {
+{{
+  "Non-Verbal Irony": {{
+    "Situational Irony": {{
       "Situation Description":"",
       "Unexpected Property":""
-    },
+    }},
     "External Knowledges": []
-  }
-}
+  }}
+}}
 ```
 
 You must respond with json code only. Do not provide any explanations. Do not provide any introductory text.
