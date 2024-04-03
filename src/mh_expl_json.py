@@ -65,7 +65,9 @@ prompt = Path(script_args.prompt_path).read_text(encoding="utf-8")
 
 generation_config = GenerationConfig(
     max_new_tokens=script_args.max_new_tokens,
-    do_sample=False
+    do_sample=False,
+    eos_token_id=tokenizer.eos_token_id,
+    pad_token_id=tokenizer.pad_token_id
 )
 
 
