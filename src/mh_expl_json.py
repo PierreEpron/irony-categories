@@ -84,7 +84,7 @@ with torch.no_grad():
 
     input_ids = tokenizer.apply_chat_template(format_turns(prompt, example), return_tensors="pt").to(model.clm_model.device)
 
-    outputs = model.generate(
+    outputs = model.clm_model.generate(
         input_ids,
         generation_config
     )
