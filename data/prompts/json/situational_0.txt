@@ -2,7 +2,7 @@ The following tweet expresses:
   - Non-verbal irony: which means that to understand the irony of the tweet, you need knowledge not lexicalized in the tweet.
   - Situational irony: meaning that there is an unexpected or incongruous property in a situation or event; that is, situations that are simply not supposed to happen.
 
-Tweet: "I can't breathe! was chosen as the most notable quote of the year in an annual list released by a Yale University librarian"
+Tweet: {text}
 
 Fill in the following json taking into account the previous definition and the following rules:
   - The “Situation Description” field should be populated with a string describing the ironic situation.
