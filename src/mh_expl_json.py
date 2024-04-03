@@ -87,7 +87,7 @@ with torch.no_grad():
     if len(list(filter(lambda x: x['example_id'] == example['example_id'], results))) != 0:
         continue
 
-    input_ids = tokenizer.apply_chat_template(format_turns(prompt, example), return_tensors="pt").to(model.device)
+    input_ids = tokenizer.apply_chat_template(format_turns(prompt, example), return_tensors="pt").to(model.clm_model.device)
 
     outputs = model.generate(
         input_ids,
