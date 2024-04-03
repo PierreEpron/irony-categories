@@ -82,7 +82,7 @@ results = read_jsonl(results_path) if results_path.is_file() else []
 act_func = torch.nn.Softmax(dim=1)
 
 with torch.no_grad():
-  for example in examples:
+  for example in tqdm(examples):
 
     if len(list(filter(lambda x: x['example_id'] == example['example_id'], results))) != 0:
         continue
@@ -91,9 +91,7 @@ with torch.no_grad():
 
     outputs = model.generate(
         input_ids,
-        generation_config,
-        eos_token_id=tokenizer.eos_token_id,
-        pad_token_id=tokenizer.pad_token_id
+        generation_config
     )
 
     example['prompt'] = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
