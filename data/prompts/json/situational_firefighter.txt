@@ -1,0 +1,30 @@
+Given a tweet that expresses:
+  - Non-verbal irony: which means that to understand the irony of the tweet, you need knowledge not lexicalized in the tweet.
+  - Situational irony: meaning that there is an unexpected or incongruous property in a situation or event; that is, situations that are simply not supposed to happen..
+
+Fill a json taking into account the previous definition and the following rules:
+ - The “Situation Description” field should be populated with a string describing the ironic situation.
+ - The “Unexpected Property” field should be populated with a string describing the property that made the situation ironic.
+ - The “External Knowledge” field should be populated with a list of strings. Each string should describe the non-lexicalized knowledge you use to understand the irony of the tweet. Leave it blank if there is none.
+
+Below is an example of the tweet and desired json response.
+
+Tweet: "Firefighters rushing to answer a fire alarm only to find their own kitchen ablaze! 🔥 Looks like someone forgot to tell their stove it's not a part of the rescue squad. #FirefighterProblems #KitchenInferno"
+
+```json
+{{
+  "Non-verbal Irony": {{
+    "Situational Irony": {{
+      "Situation Description":"Firefighters who have a fire in their kitchen while they are out to answer a fire alarm.",
+      "Unexpected Property":"The fire in the firefighters kitchen."
+    }},
+    "External Knowledges": ["One of the firefighters missions is to put out the fire."]
+  }}
+}}
+```
+
+Fill the json for the following tweet.
+
+Tweet: "{text}"
+
+You must respond with json code only. Do not provide any explanations. Do not provide any introductory text.
