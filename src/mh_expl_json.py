@@ -31,7 +31,6 @@ class ScriptArguments:
     # model
     mh_model_name: str = field(metadata={"help": "the directory used to load mh_model"})
     clm_model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf" , metadata={"help": "the model name"})
-    max_len: Optional[int] = field(default=105, metadata={"help":"drop example that have more token than max_len after tokenization"})
     
     # prompt
     prompt_path: Optional[str] = field(default="data/prompts", metadata={"help":"the path used to load prompt(s). If path is a json file, load prompt from it. If path is a dir, try to execute each json file inside as a prompt"})
