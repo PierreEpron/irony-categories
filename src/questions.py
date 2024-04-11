@@ -149,6 +149,7 @@ def consistency_check(model, prompt, questions, generation_config, label_ids=[1,
                     'consistency_prompt': tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip(),
                     'consistency_answer': tokenizer.decode(outputs[0, input_ids.shape[1]:]).strip()
                 })
+    return results
 
 generation_config = GenerationConfig(
     max_new_tokens=512,
