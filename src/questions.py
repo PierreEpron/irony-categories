@@ -104,7 +104,7 @@ def generate_questions(model, prompt, examples, generation_config, label_ids=[1,
         turns = [{'role':'user', 'content':prompt.format(examples=sample).strip()}]
         input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(model.device)
 
-        outputs = model.clm_model.generate(
+        outputs = model.generate(
             input_ids,
             attention_mask=torch.full(input_ids.shape, 1),
             generation_config=generation_config
@@ -143,14 +143,14 @@ def consistency_check(model, prompt, questions, generation_config, label_ids=[1,
                 turns = [{'role':'user', 'content':prompt.format(text=example, question=q).strip()}]
                 input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(model.device)
 
-                outputs = model.clm_model.forward(
+                outputs = model.forward(
                     input_ids,
                     attention_mask=torch.full(input_ids.shape, 1)
                 )
 
                 scores = act_func(outputs['logits'][..., -1, logits_ids])
 
-                outputs = model.clm_model.generate(
+                outputs = model.generate(
                     input_ids,
                     attention_mask=torch.full(input_ids.shape, 1),
                     generation_config=generation_config
