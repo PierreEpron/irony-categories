@@ -138,7 +138,7 @@ def consistency_check(model, prompt, questions, generation_config, label_ids=[1,
                 turns = [{'role':'user', 'content':prompt.format(text=example, question=q).strip()}]
                 input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(model.device)
 
-                outputs = model.forward(
+                outputs = model.clm_model.forward(
                     input_ids,
                     attention_mask=torch.full(input_ids.shape, 1)
                 )
@@ -163,7 +163,6 @@ def consistency_check(model, prompt, questions, generation_config, label_ids=[1,
 
 generation_config = GenerationConfig(
     max_new_tokens=512,
-    do_sample=False,
     temperature=0.6, # lower
     top_p=0.9, # higher
     top_k=50, # lower
