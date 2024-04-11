@@ -107,7 +107,7 @@ def parse_answer(answer):
 
 def consistency_check(model, prompt, questions, generation_config, label_ids=[1,2]):
 
-    results = {}
+    results = []
 
     try:
         qlist = parse_answer(questions['questions_answer'])
