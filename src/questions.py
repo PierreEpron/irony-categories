@@ -98,7 +98,7 @@ def generate_questions(model, prompt, examples, generation_config, label_ids=[1,
         sample = json.dumps({'set_0':set_0, 'set_1':set_1})
 
         turns = [{'role':'user', 'content':prompt.format(examples=sample).strip()}]
-        input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(clm_model.device)
+        input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(model.device)
 
         outputs = model.generate(
             input_ids,
