@@ -27,12 +27,13 @@ device_map = {"": 0}
 class ScriptArguments:
 
     # model
-    mh_model_name: str = field(metadata={"help": "the directory used to load mh_model"})
+    results_path: str = field(metadata={"help": "the path to save results"})
     clm_model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf" , metadata={"help": "the model name"})
 
     # b&b args
     load_in_8bit: Optional[bool] = field(default=False, metadata={"help": "load the model in 8 bits precision"})
     load_in_4bit: Optional[bool] = field(default=True, metadata={"help": "load the model in 4 bits precision"})
+
 
 
 parser = HfArgumentParser([ScriptArguments])
@@ -196,4 +197,4 @@ for i in tqdm(range(100)):
         generation_config=generation_config
     ))
 
-    write_jsonl('results/questions.jsonl', results)
+    write_jsonl(script_args.results_path, results)
