@@ -5,6 +5,7 @@ import random
 import json
 
 
+from tqdm import tqdm
 from transformers import (
     HfArgumentParser,
     GenerationConfig,
@@ -163,7 +164,7 @@ generation_config = GenerationConfig(
 
 results = []
 
-for i in range(100):
+for i in tqdm(range(100)):
 
     outputs = generate_questions(
         model=model, 
