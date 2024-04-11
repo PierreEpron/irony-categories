@@ -50,18 +50,6 @@ tokenizer, model = load_mh(
     hf_token=get_hf_token()
 )
 
-generation_config = GenerationConfig(
-    max_new_tokens=512,
-    do_sample=False,
-    # temperature=0.6, # lower
-    # top_p=0.9, # higher
-    # top_k=50, # lower
-    # repetition_penalty=1.2 # lower,
-    eos_token_id=tokenizer.eos_token_id,
-    pad_token_id=tokenizer.pad_token_id
-)
-
-
 def sample_texts(examples, n=5):
   return [example['text'] for example in random.sample(examples, n)]
 
@@ -100,8 +88,9 @@ def generate_questions(model, prompt, examples, generation_config, label_ids=[1,
         turns = [{'role':'user', 'content':prompt.format(examples=sample).strip()}]
         input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(model.device)
 
-        outputs = model.generate(
+        outputs = model.clm_model.generate(
             input_ids,
+            attention_mask=torch.full(input_ids.shape, 1),
             generation_config=generation_config
         )
 
@@ -145,7 +134,7 @@ def consistency_check(model, prompt, questions, generation_config, label_ids=[1,
 
                 scores = act_func(outputs['logits'][..., -1, logits_ids])
 
-                outputs = model.generate(
+                outputs = model.clm_model.generate(
                     input_ids,
                     attention_mask=torch.full(input_ids.shape, 1),
                     generation_config=generation_config
