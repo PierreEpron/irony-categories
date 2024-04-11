@@ -37,17 +37,6 @@ quantization_config = BitsAndBytesConfig(
    load_in_4bit=script_args.load_in_4bit
 )
 
-
-generation_config = GenerationConfig(
-    max_new_tokens=512,
-    do_sample=False,
-    # temperature=0.6, # lower
-    # top_p=0.9, # higher
-    # top_k=50, # lower
-    # repetition_penalty=1.2 # lower
-)
-
-
 tokenizer, model = load_mh(
     mh_model_name=script_args.mh_model_name,
     clm_model_name=script_args.clm_model_name,
@@ -55,6 +44,17 @@ tokenizer, model = load_mh(
     torch_dtype=torch_dtype,
     device_map=device_map,
     hf_token=get_hf_token()
+)
+
+generation_config = GenerationConfig(
+    max_new_tokens=512,
+    do_sample=False,
+    # temperature=0.6, # lower
+    # top_p=0.9, # higher
+    # top_k=50, # lower
+    # repetition_penalty=1.2 # lower,
+    eos_token_id=tokenizer.eos_token_id,
+    pad_token_id=tokenizer.pad_token_id
 )
 
 model.eval()
