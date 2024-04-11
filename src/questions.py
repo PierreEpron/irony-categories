@@ -40,11 +40,11 @@ quantization_config = BitsAndBytesConfig(
 
 generation_config = GenerationConfig(
     max_new_tokens=512,
-    do_sample=True,
-    temperature=0.6, # lower
-    top_p=0.9, # higher
-    top_k=50, # lower
-    repetition_penalty=1.2 # lower
+    do_sample=False,
+    # temperature=0.6, # lower
+    # top_p=0.9, # higher
+    # top_k=50, # lower
+    # repetition_penalty=1.2 # lower
 )
 
 
