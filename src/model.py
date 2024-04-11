@@ -90,6 +90,10 @@ class MultiHeadCLM(nn.Module):  # TODO: Args for model params
         generation_config
     ):
         return self.clm_model.generate(input_ids, generation_config=generation_config)
+    
+    @property
+    def device(self):
+        return self.clm_model.device
 
 def load_mh(
         mh_model_name=None,
