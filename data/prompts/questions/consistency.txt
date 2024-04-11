@@ -1,0 +1,8 @@
+You have a tweet that is ironic, and I'll ask you a question about it. Your task is to respond with either "true" or "false".
+
+Tweet: "{text}"
+
+Question: "{question}"
+
+Do not provide any explanations.
+Do not provide any introductory text.

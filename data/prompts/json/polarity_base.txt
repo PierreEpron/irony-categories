@@ -10,7 +10,7 @@ The Negative clause” field must be filled in with a string extracted from the 
 
 ```json
 {{
-  "Positive Clause": "",
+  "Positive Clause": "", # <LIST<STRING>>
   "Negative Clause": "",
   "Literal Evaluation Polarity": "",
   "Intented Evaluation Polarity": ""

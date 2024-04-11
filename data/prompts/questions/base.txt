@@ -1,0 +1,16 @@
+In the following json, there are two sets of ironic tweets.
+Generate questions that can be used to classify tweets into two sets based on the type of irony used.
+Each set contains tweets with different types of irony.
+The questions should be designed in a way that the answer 'yes' indicates the tweet belongs to set_0, and 'no' indicates it belongs to set_b.
+Keep in mind the different nuances of irony that might be present in the tweets.
+Does not refer to the tweets directly. Does not mention the tweets directly.
+Generate a maximum of 10 questions.
+
+```json
+{examples}
+```
+
+You must respond with a json array containing a list of strings which are the questions.
+The array must contain only the questions.
+Do not provide any explanations.
+Answer only with the json surrounded by ```json```.

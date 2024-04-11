@@ -16,7 +16,7 @@ Fill in the following json taking into account the previous definition and the f
       "Situation Description":"",
       "Unexpected Property":""
     }},
-    "External Knowledges": []
+    "External Knowledge": []
   }}
 }}
 ```
