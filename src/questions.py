@@ -10,6 +10,8 @@ from transformers import (
     HfArgumentParser,
     GenerationConfig,
     BitsAndBytesConfig,
+    AutoTokenizer,
+    AutoModelForCausalLM
 )
 
 import torch
@@ -42,14 +44,27 @@ quantization_config = BitsAndBytesConfig(
    load_in_4bit=script_args.load_in_4bit
 )
 
-tokenizer, model = load_mh(
-    mh_model_name=script_args.mh_model_name,
-    clm_model_name=script_args.clm_model_name,
+# tokenizer, model = load_mh(
+#     mh_model_name=script_args.mh_model_name,
+#     clm_model_name=script_args.clm_model_name,
+#     quantization_config=quantization_config,
+#     torch_dtype=torch_dtype,
+#     device_map=device_map,
+#     hf_token=get_hf_token()
+# )
+
+tokenizer = AutoTokenizer.from_pretrained(script_args.clm_model_name, padding_side="left", token=get_hf_token())
+tokenizer.use_default_system_prompt = False
+tokenizer.pad_token_id = tokenizer.eos_token_id
+
+model = AutoModelForCausalLM.from_pretrained(
+    script_args.clm_model_name,
     quantization_config=quantization_config,
-    torch_dtype=torch_dtype,
     device_map=device_map,
-    hf_token=get_hf_token()
+    torch_dtype=torch_dtype,
+    token=get_hf_token()
 )
+
 
 def sample_texts(examples, n=5):
   return [example['text'] for example in random.sample(examples, n)]
