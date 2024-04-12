@@ -6,6 +6,7 @@ from transformers import (
     GenerationConfig,
     BitsAndBytesConfig,
 )
+import torch
 
 from src.utils import get_hf_token
 from src.model import load_mh
