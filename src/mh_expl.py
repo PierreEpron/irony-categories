@@ -82,8 +82,8 @@ generation_config = GenerationConfig(
     repetition_penalty=1.2 # lower
 )
 
-# results_path = Path(script_args.mh_model_name + "/" + "enum_explanations.jsonl")
-results = read_jsonl(script_args.results_path) if script_args.results_path.is_file() else []
+results_path = Path(script_args.results_path)
+results = read_jsonl(results_path) if results_path.is_file() else []
 
 model.eval()
 with torch.no_grad():
@@ -115,4 +115,4 @@ with torch.no_grad():
             'n_try':n_try,
         })
 
-        write_jsonl(script_args.results_path, results)
+        write_jsonl(results_path, results)
