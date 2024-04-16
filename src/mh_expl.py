@@ -75,7 +75,7 @@ else:
 
 generation_config = GenerationConfig(
     max_new_tokens=1024,
-    do_sample=False,
+    do_sample=True,
     temperature=0.3, # lower
     top_p=0.95, # higher
     top_k=25, # lower
