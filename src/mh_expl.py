@@ -103,7 +103,7 @@ with torch.no_grad():
             input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(model.device)
             outputs = model.generate(input_ids, generation_config)
             
-            answer = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
+            answer = tokenizer.decode(outputs[0, input_ids.shape[1]:]).strip()
             n_try += 1
 
         results.append({
