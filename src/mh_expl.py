@@ -68,9 +68,9 @@ examples = examples.to_dict(orient='records')
 
 prompt_path = Path(script_args.prompt_path)
 if prompt_path.is_dir():
-    prompts = {path.stem:json.loads(path.read_text()) for path in prompt_path.glob('*.txt')}
+    prompts = {path.stem:path.read_text(encoding='utf-8') for path in prompt_path.glob('*.txt')}
 else:
-    prompts = {prompt_path.stem:json.loads(prompt_path.read_text())}
+    prompts = {prompt_path.stem:prompt_path.read_text(encoding='utf-8')}
 
 
 generation_config = GenerationConfig(
