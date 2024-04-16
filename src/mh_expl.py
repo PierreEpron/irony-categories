@@ -33,7 +33,8 @@ class ScriptArguments:
 
     # prompt
     prompt_path: Optional[str] = field(default="data/prompts", metadata={"help":"the path used to load prompt(s). If path is a txt file, load prompt from it. If path is a dir, try to laod each txt file inside as a prompt"})
-    max_try: Optional[int] = field(default=10, metadata={"help":"the number of maximum try to try to generate a correct answer"})
+    max_try: Optional[int] = field(default=10, metadata={"help":"the number of maximum try to generate a correct answer"})
+    start_idx: Optional[int] = field(default=0, metadata={"help":"the start index for skip some examples. Temporary should be removed"})
 
     # results
     results_path: Optional[str] = field(default="results/enum_expl.jsonl", metadata={"help":"the path used to store results"})
@@ -87,7 +88,7 @@ results = read_jsonl(results_path) if results_path.is_file() else []
 
 model.eval()
 with torch.no_grad():
-  for example in tqdm(examples):
+  for example in tqdm(examples[script_args.start_idx:]):
 
     if len(list(filter(lambda x: x['example_id'] == example['example_id'], results))) != 0:
         continue
