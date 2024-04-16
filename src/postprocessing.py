@@ -26,7 +26,8 @@ def parse_enums(examples):
     outputs = []
 
     for example in examples:
-        label = int(example['label_id'] == example['pred'])
-        outputs.extend([{**x, 'label':label} for x in parse_enum(example['pred_expls']['enum_exp'])])
+        if is_valid_enum(example['pred_expls']['enum_exp']):
+            label = int(example['label_id'] == example['pred'])
+            outputs.extend([{**x, 'label':label} for x in parse_enum(example['pred_expls']['enum_exp'])])
 
     return outputs
