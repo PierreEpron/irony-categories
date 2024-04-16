@@ -106,6 +106,10 @@ def preprocess_example(tokenizer, example, max_len):
     }
 
 
+def format_turns(prompt, example):
+  return [{'role':'user', 'content':prompt.format(**example).strip()}]
+
+
 def format_labeled_turns(tokenizer, label_id, turns, example):
     turns = [{'role':turn['role'], 'content':turn['content'].format(**example)} for turn in turns[str(label_id)]]
     input_ids = tokenizer.apply_chat_template(turns, return_tensors='pt').to('cuda')

@@ -6,21 +6,20 @@ from tqdm import tqdm
 
 from transformers import (
     HfArgumentParser,
-    AutoTokenizer,
-    AutoModelForCausalLM,
     GenerationConfig,
     BitsAndBytesConfig,
 )
 
-from peft import PeftModel
-from datasets import Dataset
 
 import torch
-from src.model import MultiHeadCLM, load_mh
+from src.model import load_mh
 
-from src.preprocessing import load_semeval_taskb, make_loader, preprocess_examples, format_labeled_turns
+
+from src.preprocessing import load_semeval_taskb, format_turns
+from src.postprocessing import is_valid_enum
+
 from src.utils import get_hf_token, read_jsonl, write_jsonl
-import warnings
+
 
 torch_dtype = torch.bfloat16
 device_map = {"": 0}
@@ -31,15 +30,14 @@ class ScriptArguments:
     # model
     mh_model_name: str = field(metadata={"help": "the directory used to load mh_model"})
     clm_model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf" , metadata={"help": "the model name"})
-    max_len: Optional[int] = field(default=105, metadata={"help":"drop example that have more token than max_len after tokenization"})
-
 
     # prompt
-    prompt_path: Optional[str] = field(default="data/prompts", metadata={"help":"the path used to load prompt(s). If path is a json file, load prompt from it. If path is a dir, try to execute each json file inside as a prompt"})
-    expl_from_gold: Optional[bool] = field(default=True, metadata={"help":"If true, will apply all the prompt taking into account the gold label."})
-    expl_from_pred: Optional[bool] = field(default=True, metadata={"help":"If true, will apply all the prompt taking into account the pred label."})
+    prompt_path: Optional[str] = field(default="data/prompts", metadata={"help":"the path used to load prompt(s). If path is a txt file, load prompt from it. If path is a dir, try to laod each txt file inside as a prompt"})
+    max_try: Optional[int] = field(default=10, metadata={"help":"the number of maximum try to try to generate a correct answer"})
 
-
+    # results
+    results_path: Optional[str] = field(default="results/enum_expl.jsonl", metadata={"help":"the path used to store results"})
+ 
     # b&b args
     load_in_8bit: Optional[bool] = field(default=False, metadata={"help": "load the model in 8 bits precision"})
     load_in_4bit: Optional[bool] = field(default=True, metadata={"help": "load the model in 4 bits precision"})
@@ -48,13 +46,11 @@ class ScriptArguments:
 parser = HfArgumentParser([ScriptArguments])
 script_args = parser.parse_args_into_dataclasses()[0]
 
-if not (script_args.expl_from_gold or script_args.expl_from_pred):
-    warnings.warn(f"One of expl_from_gold ({script_args.expl_from_gold}) or expl_from_pred ({script_args.expl_from_pred}) should be set to True. Otherwise no explaination prompt is used.")
-
 
 quantization_config = BitsAndBytesConfig(
     load_in_8bit=script_args.load_in_8bit, load_in_4bit=script_args.load_in_4bit
 )
+
 
 tokenizer, model = load_mh(
     mh_model_name=script_args.mh_model_name,
@@ -64,75 +60,59 @@ tokenizer, model = load_mh(
     device_map=device_map,
     hf_token=get_hf_token()
 )
-model.eval()
 
 
-train, test = load_semeval_taskb(return_sets='splits', urls=False, lower=False)
-examples = preprocess_examples(tokenizer, train, script_args.max_len)
-examples += preprocess_examples(tokenizer, test, script_args.max_len)
-examples = Dataset.from_list(examples).map(lambda x: tokenizer(x['text']))
-loader = make_loader(examples, tokenizer, 1, extra_columns=True, shuffle=False)
+_, examples = load_semeval_taskb(return_sets='splits', urls=False, lower=False)
+examples = examples.to_dict(orient='records')
 
 
 prompt_path = Path(script_args.prompt_path)
 if prompt_path.is_dir():
-    prompts = {path.stem:json.loads(path.read_text()) for path in prompt_path.glob('*.json')}
+    prompts = {path.stem:json.loads(path.read_text()) for path in prompt_path.glob('*.txt')}
 else:
     prompts = {prompt_path.stem:json.loads(prompt_path.read_text())}
 
 
 generation_config = GenerationConfig(
-    max_new_tokens=512,
-    do_sample=True,
-    temperature=0.6,
-    top_p=0.9,
-    top_k=50,
-    repetition_penalty=1.2
+    max_new_tokens=1024,
+    do_sample=False,
+    temperature=0.3, # lower
+    top_p=0.95, # higher
+    top_k=25, # lower
+    repetition_penalty=1.2 # lower
 )
 
-results_path = Path(script_args.mh_model_name + "/" + "enum_explanations.jsonl")
-results = read_jsonl(results_path) if results_path.is_file() else []
+# results_path = Path(script_args.mh_model_name + "/" + "enum_explanations.jsonl")
+results = read_jsonl(script_args.results_path) if script_args.results_path.is_file() else []
 
-act_func = torch.nn.Softmax(dim=1)
-
+model.eval()
 with torch.no_grad():
-  for batch in tqdm(loader):
+  for example in tqdm(examples):
+    for k_prompt, prompt in prompts.items():
 
-    if len(list(filter(lambda x: x['example_id'] == batch['example_id'][0], results))) != 0:
-        continue
+        if len(list(filter(lambda x: x['example_id'] == example['example_id'] and x['prompt_key'] == example['prompt_key'], results))) != 0:
+            continue
 
-    gold = batch['label_id'][0].cpu().item()
-    text = batch['text'][0]
+        anwser = ''
+        n_try = 0
 
-    example = {
-      'example_id': batch['example_id'][0],
-      'label_id': gold,
-      'text': text
-    }
+        while not is_valid_enum(anwser) and n_try < script_args.max_try: #TODO: This should be configurable. Here it's work only for enum.
 
-    outputs = model(input_ids=batch['input_ids'], attention_mask=batch['attention_mask'], label_id=batch['label_id'])
-    scores = act_func(outputs.logits)
-    pred = scores.argmax(dim=1).cpu().item()
+            turns = format_turns(prompt, example)
+            input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(model.device)
+            outputs = model.generate(input_ids, generation_config)
+            
+            answer = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
+            n_try += 1
 
-    example.update({
-      'scores': scores.cpu().tolist(),
-      'pred': pred,
-      'gold_expls': {},
-      'pred_expls': {}
-    })
+            
+        results.append({
+            **example,
+            'prompt_key': k_prompt,
+            'n_try':n_try,
+            'prompt': tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip(),
+            'answer': answer,
+            'n_try':n_try,
+        })
 
-    text = text.replace('<s> [INST]', '').replace('[/INST]', '').strip()
-
-    for k, prompt in prompts.items():
-        input_ids = format_labeled_turns(tokenizer, gold, prompt, {'text':text})
-        outputs = model.generate(input_ids, generation_config)
-        example['gold_expls'][k] = tokenizer.decode(outputs[0])
-
-    for k, prompt in prompts.items():
-        input_ids = format_labeled_turns(tokenizer, pred, prompt, {'text':text})
-        outputs = model.generate(input_ids, generation_config)
-        example['pred_expls'][k] = tokenizer.decode(outputs[0])
-
-    results.append(example)
-
-    write_jsonl(results_path, results)
+        write_jsonl(script_args.results_path, results)

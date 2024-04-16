@@ -1,0 +1,6 @@
+Given this definition of situational irony: there is an unexpected or incongruous property in a situation or event; that is, situations that are simply not supposed to happen.
+Explain why the following tweet expresses situational irony.
+
+Tweet: "{text}"
+
+Enumerate clearly each point of your answer.

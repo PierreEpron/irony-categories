@@ -1,0 +1,6 @@
+Given this definition of irony by polarity contrast: an evaluative expression whose polarity (positive, negative) is inverted between the literal and the intended evaluation.
+Explain why the following tweet expresses irony by polarity contrast.
+
+Tweet: "{text}"
+
+Enumerate clearly each point of your answer.

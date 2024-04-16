@@ -1,0 +1,5 @@
+Explain why the following tweet expresses irony.
+
+Tweet: {text}
+
+Enumerate clearly each point of your answer.
