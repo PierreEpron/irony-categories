@@ -88,10 +88,11 @@ results = read_jsonl(results_path) if results_path.is_file() else []
 model.eval()
 with torch.no_grad():
   for example in tqdm(examples):
-    for k_prompt, prompt in prompts.items():
 
-        if len(list(filter(lambda x: x['example_id'] == example['example_id'] and x['prompt_key'] == example['prompt_key'], results))) != 0:
-            continue
+    if len(list(filter(lambda x: x['example_id'] == example['example_id'], results))) != 0:
+        continue
+
+    for k_prompt, prompt in prompts.items():
 
         anwser = ''
         n_try = 0
@@ -105,7 +106,6 @@ with torch.no_grad():
             answer = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
             n_try += 1
 
-            
         results.append({
             **example,
             'prompt_key': k_prompt,
@@ -115,4 +115,4 @@ with torch.no_grad():
             'n_try':n_try,
         })
 
-        write_jsonl(results_path, results)
+    write_jsonl(results_path, results)
