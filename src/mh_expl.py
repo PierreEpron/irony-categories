@@ -94,10 +94,10 @@ with torch.no_grad():
 
     for k_prompt, prompt in prompts.items():
 
-        anwser = ''
+        answer = ''
         n_try = 0
 
-        while not is_valid_enum(anwser) and n_try < script_args.max_try: #TODO: This should be configurable. Here it's work only for enum.
+        while not is_valid_enum(answer) and n_try < script_args.max_try: #TODO: This should be configurable. Here it's work only for enum.
 
             turns = format_turns(prompt, example)
             input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(model.device)
