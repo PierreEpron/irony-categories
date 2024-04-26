@@ -76,7 +76,7 @@ trainer.fit(
 model = M.LLMClassifier.load(training_config.result_path)
 predictions = trainer.predict(
     model=model, 
-    test_loader=test_loader, 
+    dataloaders=test_loader, 
     return_predictions=True
 )
 write_jsonl(Path(training_config.result_path) / "predictions.jsonl", predictions)
