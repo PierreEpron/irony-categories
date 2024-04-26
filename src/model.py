@@ -13,7 +13,7 @@ import torch
 
 @dataclass
 class FFClassifierConfig:
-    input_size: Optional[int] = field(default=64, metadata={"help":"Size of input. Should be equal to the hidden_states size of the LLM used as input."})
+    input_size: Optional[int] = field(default=4096, metadata={"help":"Size of input. Should be equal to the hidden_states size of the LLM used as input."})
     num_labels: Optional[int] = field(default=4, metadata={"help":"Number of labels. Used as output size of logits."})
     hidden_states_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states block to use as input for classification."})
     cls_token_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states token to use as input for classification."})
