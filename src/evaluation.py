@@ -4,10 +4,10 @@ from sklearn.metrics import matthews_corrcoef
 import numpy as np
 
 ID_2_LABEL = {
-    0:"No Irony",
-    1:"Irony by Clash",
-    2:"Situational Irony",
-    3:"Other Irony"
+        0:"No Irony",
+        1:"Irony by Clash",
+        2:"Situational Irony",
+        3:"Other Irony"
 }
 
 ##### Fleiss Kappa ######

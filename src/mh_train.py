@@ -92,7 +92,7 @@ train, test = load_semeval_taskb(return_sets='splits', urls=False, lower=False)
 # from https://scikit-learn.org/stable/modules/generated/sklearn.utils.class_weight.compute_class_weight.html
 label_weigths = (len(train) / (train.label_id.nunique() * train.label_id.value_counts())).values 
 label_weigths = torch.tensor(label_weigths).to(dtype=torch_dtype)
-
+print(label_weigths)
 
 ##### Load/Create Model #####
     

@@ -12,12 +12,12 @@ SPACES_PATTERN = re.compile(r'\s+')
 
 def load_semeval_taskb(
         return_sets : str = 'all', 
-        hashtag_labels = ' ', 
-        hashtag_nots = 'not',
-        users='@user', 
-        urls = ' ', 
-        spaces = ' ', 
-        lower = True
+            hashtag_labels = ' ', 
+            hashtag_nots = 'not',
+            users='@user', 
+            urls = ' ', 
+            spaces = ' ', 
+            lower = True
     ):
     """ Load and preprocess example for semeval taskb. 
 

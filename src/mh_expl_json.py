@@ -68,7 +68,7 @@ clm_model = AutoModelForCausalLM.from_pretrained(
 
 clm_model.config.pad_token_id = tokenizer.pad_token_id
 clm_model.resize_token_embeddings(len(tokenizer))
-
+clm_model.eval()
 
 _, examples = load_semeval_taskb(return_sets='splits', urls=False, lower=False)
 examples = examples.to_dict(orient='records')
