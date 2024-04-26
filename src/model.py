@@ -1,5 +1,15 @@
 from dataclasses import dataclass, field
 from typing import Optional
+from pathlib import Path
+import json
+
+from transformers import AutoModel, BitsAndBytesConfig
+from peft import LoraConfig, get_peft_model, PeftModel
+from sklearn.metrics import matthews_corrcoef
+
+import lightning as L
+import torch
+
 
 @dataclass
 class FFClassifierConfig:
@@ -27,6 +37,21 @@ class PeftConfig:
     lora_dropout: Optional[float] = field(default=0.1, metadata={"help":"use or not dropout for the LoRA adapter"})
     lora_bias: Optional[str] = field(default="none", metadata={"help":"use or not bias for the LoRA adapter"})
     inference_mode: Optional[bool] = field(default=False, metadata={"help": "Is the adapter used for inference or not"})
+
+@dataclass
+class TrainingConfig:
+
+    current_split: int = field(metadata={"help": "The cross validation split to use (between 0 and 4)"})
+    result_path: str = field(metadata={"help": "The path used to store results"})
+
+    split_path: Optional[str] = field(default="data/sem_eval/splits.jsonl", metadata={"help":"The jsonl file path containing the cross validation split indices"})
+
+    lr_peft: Optional[float] = field(default=1e-3, metadata={"help":"Learning rate for peft adapater on LLM"})
+    lr_clf: Optional[float] = field(default=0.1, metadata={"help":"Learning rate for classifier"})
+    max_epochs: Optional[int] = field(default=10, metadata={"help":"Maximum number of epochs"})
+    train_batch_size: Optional[int] = field(default=4, metadata={"help":"Size of a train batch"})
+    val_batch_size: Optional[int] = field(default=4, metadata={"help":"Size of a validation batch"})
+    max_len: Optional[int] = field(default=105, metadata={"help":"Maximum length of a tokenized example. If greater than this length, drop the example."})
 
 class FFClassifer(torch.nn.Module):
 
@@ -102,14 +127,14 @@ class LLMClassifier(L.LightningModule):
         self.torch_dtype = torch_dtype
         
         quantization_config = None
-        if config.load_in_4bit or config.load_in_8bit:
+        if self.llm_config.load_in_4bit or self.llm_config.load_in_8bit:
             quantization_config = BitsAndBytesConfig(
-                load_in_8bit=config.load_in_8bit, 
-                load_in_4bit=config.load_in_4bit
+                load_in_8bit=self.llm_config.load_in_8bit, 
+                load_in_4bit=self.llm_config.load_in_4bit
             )
 
         self.llm_model = AutoModel.from_pretrained(
-            config.model_name,
+            self.llm_config.model_name,
             quantization_config=quantization_config,
             device_map=device_map,
             torch_dtype=torch_dtype,
