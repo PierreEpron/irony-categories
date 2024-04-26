@@ -11,7 +11,7 @@ from src import model as M
 from src import preprocessing as P
 
 from src.tools.split_data import get_split
-from src.utils import write_jsonl
+from src.utils import get_hf_token, write_jsonl
 
 
 ##### Parse args and instantiate configs #####
@@ -25,7 +25,13 @@ llm_config, peft_config, clf_config, training_config = parser.parse_args_into_da
 tokenizer = AutoTokenizer.from_pretrained(llm_config.model_name)
 tokenizer.use_default_system_prompt = False
 
-model = M.LLMClassifier(llm_config, clf_config=clf_config, peft_config=peft_config, training_config=training_config)
+model = M.LLMClassifier(
+    llm_config, 
+    clf_config=clf_config, 
+    peft_config=peft_config, 
+    training_config=training_config, 
+    hf_token=get_hf_token()
+)
 
 if llm_config.eos_as_pad:
     tokenizer.pad_token_id = tokenizer.eos_token_id
