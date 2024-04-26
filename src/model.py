@@ -251,22 +251,23 @@ class LLMClassifier(L.LightningModule):
         scores = torch.nn.functional.softmax(logits, dim=-1)
         pred = scores.argmax(dim=-1)
 
-        predictions = {}
+        predictions = []
 
         for example_id, label_id, text, scores, pred in zip(
             batch['example_id'],
             batch['label_id'],
             batch['text'],
             scores.cpu().tolist(),
-            pred.cpu().item()
+            pred.cpu()
         ):
             predictions.append({
                 'example_id':example_id,
                 'label_id':label_id,
                 'text':text,
                 'scores':scores,
-                'pred':pred
+                'pred':pred.item()
             })
+        return predictions
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW([
