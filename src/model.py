@@ -1,138 +1,29 @@
-# -*- coding: utf-8 -*-
+from dataclasses import dataclass, field
+from typing import Optional
 
-from typing import List, Optional, Tuple, Union
+@dataclass
+class FFClassifierConfig:
+    input_size: Optional[int] = field(default=64, metadata={"help":"Size of input. Should be equal to the hidden_states size of the LLM used as input."})
+    num_labels: Optional[int] = field(default=4, metadata={"help":"Number of labels. Used as output size of logits."})
+    hidden_states_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states block to use as input for classification."})
+    cls_token_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states token to use as input for classification."})
 
-from transformers.modeling_outputs import SequenceClassifierOutputWithPast
-from transformers import (
-    AutoTokenizer,
-    AutoModelForCausalLM
-)
+@dataclass
+class PretrainedLLMConfig:
+    model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf", metadata={"help": "pretrain model name for huggingface."})
+    # tokenizer args
+    padding_side: Optional[str] = field(default="left", metadata={"help": "padding side of the tokenizer."})
+    eos_as_pad: Optional[bool] = field(default=True, metadata={"help": "use eos token as pad token."})
+    # b&b args
+    load_in_8bit: Optional[bool] = field(default=False, metadata={"help": "load the model in 8 bits precision."})
+    load_in_4bit: Optional[bool] = field(default=True, metadata={"help": "load the model in 4 bits precision."})
 
-from peft import get_peft_model, PeftModel
+@dataclass
+class PeftConfig:
 
-from torch import nn
-import torch
-
-
-class MultiHeadCLM(nn.Module):  # TODO: Args for model params
-    def __init__(
-            self, 
-            clm_model, 
-            context_size=4096, 
-            num_labels=4, 
-            label_weigths=None,
-            hidden_states_idx=-1,
-            cls_token_idx=-1,
-    ) -> None:
-        super().__init__()
-
-        self.clm_model = clm_model
-
-        self.context_size = context_size
-        self.num_labels = num_labels
-        self.label_weights = label_weigths
-        self.hidden_states_idx = hidden_states_idx
-        self.cls_token_idx = cls_token_idx
-
-        self.score = nn.Linear(self.context_size, self.num_labels)
-        self.loss_fct = nn.CrossEntropyLoss(self.label_weights)
-
-    def forward(
-        self,
-        input_ids: torch.LongTensor = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[List[torch.FloatTensor]] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        labels: Optional[torch.LongTensor] = None,
-        use_cache: Optional[bool] = None,
-        output_attentions: Optional[bool] = None,
-        label_id: Optional[torch.LongTensor] = None,
-    ) -> Union[Tuple, SequenceClassifierOutputWithPast]:
-
-        # print("input_ids: ", input_ids.shape, input_ids.dtype)
-        # print("attention_mask: ", attention_mask.shape, attention_mask.dtype)
-
-        outputs = self.clm_model.forward(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            past_key_values=past_key_values,
-            position_ids=position_ids,
-            inputs_embeds=inputs_embeds,
-            labels=labels,
-            use_cache=use_cache,
-            output_attentions=output_attentions,
-            output_hidden_states=True,
-            return_dict=True,
-        )
-        # print("outputs.hidden_states[self.hidden_states_idx]: ", outputs['hidden_states'][-1].shape)
-
-        logits = self.score(outputs['hidden_states'][self.hidden_states_idx])
-        # print("logits: ", logits.shape, logits.dtype)
-
-        pooled_logits = logits[:, self.cls_token_idx]
-        # print("pooled_logits: ", pooled_logits.shape, pooled_logits.dtype)
-
-        # TODO: Should be put elsewhere
-        labels = torch.nn.functional.one_hot(label_id, num_classes=self.num_labels).to(pooled_logits.device, pooled_logits.dtype)
-        # print("labels: ", labels.shape, labels.dtype)
-
-        loss = self.loss_fct(pooled_logits, labels)
-
-        return SequenceClassifierOutputWithPast(
-            loss=loss,
-            logits=pooled_logits
-        )
-    
-    def generate(
-        self,
-        input_ids,
-        generation_config
-    ):
-        return self.clm_model.generate(input_ids, generation_config=generation_config)
-    
-    @property
-    def device(self):
-        return self.clm_model.device
-
-def load_mh(
-        mh_model_name=None,
-        clm_model_name=None,
-        quantization_config=None,
-        lora_config=None,
-        label_weigths=None,
-        torch_dtype=None, 
-        device_map=None,
-        hf_token=None
-    ):
-
-
-    tokenizer = AutoTokenizer.from_pretrained(clm_model_name, padding_side="left", token=hf_token)
-    tokenizer.add_special_tokens({'sep_token':'<SEP>', 'pad_token':'<PAD>', 'cls_token':'<CLS>', 'mask_token':'<MASK>'})
-    tokenizer.use_default_system_prompt = False
-
-
-    clm_model = AutoModelForCausalLM.from_pretrained(
-        clm_model_name,
-        quantization_config=quantization_config,
-        device_map=device_map,
-        torch_dtype=torch_dtype,
-        token=hf_token
-    )
-
-
-    clm_model.config.pad_token_id = tokenizer.pad_token_id
-    clm_model.resize_token_embeddings(len(tokenizer))
-
-    mh_model = MultiHeadCLM(clm_model, label_weigths=label_weigths)
-
-    if mh_model_name == None:
-        mh_model = get_peft_model(mh_model, lora_config)
-    else:
-        mh_model = PeftModel.from_pretrained(mh_model, mh_model_name)
-
-    mh_model = mh_model.to(torch_dtype)
-
-
-    return tokenizer, mh_model
-
+    lora_r: Optional[int] = field(default=64, metadata={"help": "the r parameter of the LoRA adapter"})
+    lora_alpha: Optional[int] = field(default=16, metadata={"help": "the alpha parameter of the LoRA adapter"})
+    target_modules: Optional[list] = field(default_factory=lambda:["q_proj", "v_proj"], metadata={"help": "layers to plug LoRA adapter."})
+    lora_dropout: Optional[float] = field(default=0.1, metadata={"help":"use or not dropout for the LoRA adapter"})
+    lora_bias: Optional[str] = field(default="none", metadata={"help":"use or not bias for the LoRA adapter"})
+    inference_mode: Optional[bool] = field(default=False, metadata={"help": "Is the adapter used for inference or not"})
