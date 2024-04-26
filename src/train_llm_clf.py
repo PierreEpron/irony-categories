@@ -53,7 +53,7 @@ test_set = P.make_dataset(test, tokenizer, turns, max_len=training_config.max_le
 
 train_loader = P.make_loader(train_set, tokenizer, training_config.train_batch_size, False, True)
 val_loader = P.make_loader(val_set, tokenizer, training_config.val_batch_size, False, False)
-test_loader = P.make_loader(test_set, tokenizer, 1, True, False)
+test_loader = P.make_loader(test_set, tokenizer, training_config.test_batch_size, True, False)
 
 # print(next(iter(train_loader)).keys())
 # print(next(iter(test_loader)).keys())
