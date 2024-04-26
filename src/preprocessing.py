@@ -2,6 +2,7 @@ import pandas as pd
 import re
 
 from torch.utils.data import DataLoader
+from datasets import Dataset
 import torch
 
 HASHTAG_LABELS_PATTERN = re.compile(r'#(irony|sarcasm)', flags=re.I)
@@ -87,75 +88,60 @@ def load_semeval_taskb(
     # If `return_sets` is 'all' return the train test concatenation and train and test independantly
     return full, train, test
 
+from torch.utils.data import DataLoader
+def tokenize_example(example, tokenizer, turns, num_classes=4):
+    
+    # Copy and format turns
+    turns = [{'role':turn['role'], 'content':turn['content'].format(**example)} for turn in turns]
 
-def preprocess_example(tokenizer, example, max_len):
-
-    turns = [
-        {"role": "user", "content": example['text'].strip()},
-    ]
-
+    # Apply chat template
     input_ids = tokenizer.apply_chat_template(turns)
+    example['input_ids'] = input_ids
 
-    if len(input_ids) > max_len:
-        return None
+    # Create attention mask
+    example['attention_mask'] = [1] * len(input_ids)
 
-    return {
-        'example_id': example['example_id'],
-        'text': tokenizer.decode(input_ids),
-        'label_id': example['label_id'],
-    }
+    # One hot labels
+    example['labels'] = torch.nn.functional.one_hot(
+        torch.tensor(example['label_id']), 
+        num_classes=num_classes
+    )
 
+    return example
 
-def format_turns(prompt, example):
-  return [{'role':'user', 'content':prompt.format(**example).strip()}]
-
-
-def format_labeled_turns(tokenizer, label_id, turns, example):
-    turns = [{'role':turn['role'], 'content':turn['content'].format(**example)} for turn in turns[str(label_id)]]
-    input_ids = tokenizer.apply_chat_template(turns, return_tensors='pt').to('cuda')
-    if input_ids[0][-1] == tokenizer.eos_token_id:
-        input_ids = input_ids[...,:-1]
-    return input_ids
-
-
-def preprocess_examples(tokenizer, examples, max_len):
-
-    examples = [preprocess_example(tokenizer, example, max_len) for example in examples.to_dict(orient='records')]
-    return [example for example in examples if example]
-
-    # test = [preprocess(example, script_args.max_len) for example in test.to_dict(orient='records')]
-    # test = [example for example in test if example]
-
+def make_dataset(examples, tokenizer, turns, max_len=105, num_classes=4):
+    examples = Dataset.from_list(examples.to_dict(orient="records"))
+    examples = examples.map(lambda x: tokenize_example(x, tokenizer, turns))
+    examples = examples.filter(lambda x: len(x['input_ids']) < max_len)
+    return examples
 
 def collate_key(batch, key):
   return [ex[key] for ex in batch]
-
 
 def pad_key(batch, key, pad_value):
     collated = collate_key(batch, key)
     max_len = max([len(ex) for ex in collated])
     return [[pad_value] * (max_len - len(ex)) + ex for ex in collated]
 
-
-def collate(tokenizer, extra_columns=False):
+def collate(tokenizer, extra_columns=False, dtype=torch.long):
     def wrapped_collate(batch):
-        
         collated_batch = {
-            'label_id': torch.tensor(collate_key(batch, 'label_id')),
-            'input_ids': torch.LongTensor(pad_key(batch, 'input_ids', tokenizer.pad_token_id)),
-            'attention_mask': torch.LongTensor(pad_key(batch, 'attention_mask', 0)),
+            'labels': torch.tensor(collate_key(batch, 'labels')).to(dtype=dtype),
+            'input_ids': torch.tensor(pad_key(batch, 'input_ids', tokenizer.pad_token_id)).to(dtype=dtype),
+            'attention_mask': torch.tensor(pad_key(batch, 'attention_mask', 0)).to(dtype=dtype),
         }
 
         if extra_columns:
 
             collated_batch.update({
-                'example_id': collate_key(batch, 'example_id'), 'text': collate_key(batch, 'text')
+                'example_id': collate_key(batch, 'example_id'), 
+                'label_id': collate_key(batch, 'label_id'), 
+                'text': collate_key(batch, 'text')
             })
             
         return collated_batch
         
     return wrapped_collate
-
 
 def make_loader(dataset, tokenizer, batch_size, extra_columns=False, shuffle=True):
     '''
@@ -167,6 +153,3 @@ def make_loader(dataset, tokenizer, batch_size, extra_columns=False, shuffle=Tru
         collate_fn=collate(tokenizer, extra_columns=extra_columns), 
         shuffle=shuffle
     )
-
-
-
