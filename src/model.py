@@ -212,7 +212,7 @@ class LLMClassifier(L.LightningModule):
         logits = self.forward(batch, batch_idx)
         
         loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype))
-        self.log("train_loss", loss)
+        self.log("train_loss", loss, on_step=False, on_epoch=True)
 
         # TODO: argmax on labels should be avoided. Maybe move label onehot encoding from dataloader to here.
         self.train_outputs.extend(logits.argmax(dim=-1).cpu())
@@ -222,7 +222,7 @@ class LLMClassifier(L.LightningModule):
     
     def on_train_epoch_end(self):
         
-        self.log("train_mcc", matthews_corrcoef(self.train_outputs, self.train_targets))
+        self.log("train_mcc", matthews_corrcoef(self.train_outputs, self.train_targets), on_step=False, on_epoch=True)
         self.train_outputs.clear()
         self.train_targets.clear()
     
@@ -232,7 +232,7 @@ class LLMClassifier(L.LightningModule):
         logits = self.forward(batch, batch_idx)
 
         loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype))
-        self.log("val_loss", loss)
+        self.log("val_loss", loss, on_step=False, on_epoch=True)
 
         # TODO: argmax on labels should be avoided. Maybe move label onehot encoding from dataloader to here.
         self.val_outputs.extend(logits.argmax(dim=-1).cpu())
@@ -240,9 +240,7 @@ class LLMClassifier(L.LightningModule):
 
     def on_validation_epoch_end(self):
 
-        mcc = matthews_corrcoef(self.val_outputs, self.val_targets)
-
-        self.log("val_mcc", mcc)
+        self.log("val_mcc", matthews_corrcoef(self.val_outputs, self.val_targets), on_step=False, on_epoch=True)
         self.val_outputs.clear()
         self.val_targets.clear()
 
