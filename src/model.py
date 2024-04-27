@@ -6,8 +6,10 @@ import json
 from pytorch_lightning.loggers import TensorBoardLogger, CSVLogger
 from transformers import AutoModel, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, PeftModel
+from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import matthews_corrcoef
 import lightning as L
+import numpy as np
 import torch
 
 
@@ -48,6 +50,7 @@ class TrainingConfig:
 
     lr_peft: Optional[float] = field(default=1.5e-4, metadata={"help":"Learning rate for peft adapater on LLM"})
     lr_clf: Optional[float] = field(default=1e-3, metadata={"help":"Learning rate for classifier"})
+    weighted_loss: Optional[str] = field(default="balanced", metadata={"help":"Method to use for weight loss"})
     max_epochs: Optional[int] = field(default=10, metadata={"help":"Maximum number of epochs"})
     train_batch_size: Optional[int] = field(default=4, metadata={"help":"Size of a train batch"})
     val_batch_size: Optional[int] = field(default=4, metadata={"help":"Size of a validation batch"})
@@ -115,6 +118,8 @@ class LLMClassifier(L.LightningModule):
 
         # TODO: Better way to handle
         self.clf_model.to(dtype=torch_dtype)
+        self.torch_dtype = torch_dtype
+        self.label_weigths = None
 
         # Use to compute MCC at the end of each train/val epoch.
         self.train_outputs = []
@@ -211,7 +216,7 @@ class LLMClassifier(L.LightningModule):
 
         logits = self.forward(batch, batch_idx)
         
-        loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype))
+        loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype), weight=self.label_weigths)
         self.log("train_loss", loss, on_step=False, on_epoch=True)
 
         # TODO: argmax on labels should be avoided. Maybe move label onehot encoding from dataloader to here.
@@ -231,7 +236,7 @@ class LLMClassifier(L.LightningModule):
 
         logits = self.forward(batch, batch_idx)
 
-        loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype))
+        loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype), weight=self.label_weigths)
         self.log("val_loss", loss, on_step=False, on_epoch=True)
 
         # TODO: argmax on labels should be avoided. Maybe move label onehot encoding from dataloader to here.
@@ -301,3 +306,19 @@ class CkptCallback(L.Callback):
         if self.best_model_metric < current_model_metric:
             self.best_model_metric = current_model_metric
             pl_module.save(self.ckpt_path)
+
+
+class WeightedLossCallback(L.Callback):
+
+    def on_train_start(self, trainer, pl_module):
+        if pl_module.training_config.weighted_loss == "no":
+            pl_module.label_weigths = None
+        elif pl_module.training_config.weighted_loss == "balanced":
+            label_ids = trainer.train_dataloader.dataset['label_id']
+            label_weights = compute_class_weight(
+                class_weight="balanced", 
+                classes=np.unique(label_ids), 
+                y=label_ids
+            )
+            label_weights = torch.tensor(label_weights).to(dtype=pl_module.torch_dtype, device=pl_module.device)
+            pl_module.label_weights = label_weights

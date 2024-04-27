@@ -63,12 +63,13 @@ test_loader = P.make_loader(test_set, tokenizer, training_config.test_batch_size
 
 lr_monitor = LearningRateMonitor(logging_interval='step')
 ckpt_callback = M.CkptCallback(ckpt_path=training_config.result_path)
+weighted_loss = M.WeightedLossCallback()
 
 trainer = L.Trainer(
     max_epochs=training_config.max_epochs,
     enable_checkpointing=False,
     logger=M.get_plt_loggers(training_config.result_path),
-    callbacks=[lr_monitor, ckpt_callback]
+    callbacks=[weighted_loss, lr_monitor, ckpt_callback]
 )
 
 trainer.fit(
