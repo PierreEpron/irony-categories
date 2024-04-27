@@ -67,6 +67,7 @@ weighted_loss = M.WeightedLossCallback()
 
 trainer = L.Trainer(
     max_epochs=training_config.max_epochs,
+    gradient_clip_val=training_config.gradient_clip_val,
     enable_checkpointing=False,
     logger=M.get_plt_loggers(training_config.result_path),
     callbacks=[weighted_loss, lr_monitor, ckpt_callback]

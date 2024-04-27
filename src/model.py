@@ -50,7 +50,8 @@ class TrainingConfig:
 
     lr_peft: Optional[float] = field(default=1.5e-4, metadata={"help":"Learning rate for peft adapater on LLM"})
     lr_clf: Optional[float] = field(default=1e-3, metadata={"help":"Learning rate for classifier"})
-    weighted_loss: Optional[str] = field(default="balanced", metadata={"help":"Method to use for weight loss"})
+    weighted_loss: Optional[str] = field(default="no", metadata={"help":"Method to use for weight loss"})
+    gradient_clip_val: Optional[float] = field(default=0.5, metadata={"help":"Clip gradients' global norm to <=`gradient_clip_val` using torch.nn.utils.clip_grad_norm_()"})
     max_epochs: Optional[int] = field(default=10, metadata={"help":"Maximum number of epochs"})
     train_batch_size: Optional[int] = field(default=4, metadata={"help":"Size of a train batch"})
     val_batch_size: Optional[int] = field(default=4, metadata={"help":"Size of a validation batch"})
@@ -306,7 +307,7 @@ class CkptCallback(L.Callback):
         if self.best_model_metric < current_model_metric:
             self.best_model_metric = current_model_metric
             pl_module.save(self.ckpt_path)
-
+    
 
 class WeightedLossCallback(L.Callback):
 
