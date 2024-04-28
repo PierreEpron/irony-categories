@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 
 from pytorch_lightning.loggers import TensorBoardLogger, CSVLogger
+from lightning.pytorch.utilities.types import LRSchedulerConfig
 from transformers import AutoModel, BitsAndBytesConfig
 from peft import LoraConfig, get_peft_model, PeftModel
 from sklearn.utils.class_weight import compute_class_weight
@@ -53,6 +54,8 @@ class TrainingConfig:
     weighted_loss: Optional[str] = field(default="no", metadata={"help":"Method to use for weight loss"})
     gradient_clip_val: Optional[float] = field(default=0.5, metadata={"help":"Clip gradients' global norm to <=`gradient_clip_val` using torch.nn.utils.clip_grad_norm_()"})
     max_epochs: Optional[int] = field(default=10, metadata={"help":"Maximum number of epochs"})
+    lr_scheduler: Optional[str] = field(default="linear", metadata={"help":"Which kind of lr scheduler to use. If `no` don't use one."})
+    num_warmup_epoch: Optional[int] = field(default=1, metadata={"help":"If `lr_scheduler` is not `no`. Nb of epochs to use as warmup."})
     train_batch_size: Optional[int] = field(default=4, metadata={"help":"Size of a train batch"})
     val_batch_size: Optional[int] = field(default=4, metadata={"help":"Size of a validation batch"})
     test_batch_size: Optional[int] = field(default=1, metadata={"help":"Size of a test batch"})
@@ -274,12 +277,23 @@ class LLMClassifier(L.LightningModule):
             })
         return predictions
 
+    
     def configure_optimizers(self):
+
         optimizer = torch.optim.AdamW([
             {"params":self.llm_model.parameters(), "lr":self.training_config.lr_peft},
             {"params":self.clf_model.parameters(), "lr":self.training_config.lr_clf}
         ])
+
         return optimizer
+
+
+def linear_schedule_with_warmup(num_warmup_steps, num_training_steps):
+    def _linear_schedule_with_warmup(current_step):
+        if current_step < num_warmup_steps:
+            return float(current_step) / float(max(1, num_warmup_steps))
+        return max(0.0, float(num_training_steps - current_step) / float(max(1, num_training_steps - num_warmup_steps)))
+    return _linear_schedule_with_warmup
 
 
 def get_plt_loggers(path):
@@ -312,6 +326,7 @@ class CkptCallback(L.Callback):
 class WeightedLossCallback(L.Callback):
 
     def on_train_start(self, trainer, pl_module):
+        
         if pl_module.training_config.weighted_loss == "no":
             pl_module.label_weigths = None
         elif pl_module.training_config.weighted_loss == "balanced":
@@ -323,3 +338,27 @@ class WeightedLossCallback(L.Callback):
             )
             label_weights = torch.tensor(label_weights).to(dtype=pl_module.torch_dtype, device=pl_module.device)
             pl_module.label_weights = label_weights
+
+
+class LRSchedulerCallback(L.Callback):
+    
+    def on_train_start(self, trainer, pl_module):
+
+        if pl_module.training_config.lr_scheduler == "linear":
+            
+            config = pl_module.training_config
+            num_epoch_steps = np.ceil(len(trainer.train_dataloader.dataset) / config.train_batch_size)
+            num_warmup_steps = num_epoch_steps * config.num_warmup_epoch
+            num_training_steps = num_epoch_steps * config.max_epochs
+
+            lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+                pl_module.optimizers(), 
+                lr_lambda=linear_schedule_with_warmup(num_warmup_steps, num_training_steps)
+            )
+
+            lr_scheduler_config = LRSchedulerConfig(
+                scheduler=lr_scheduler,
+                interval="step"
+            )
+
+            trainer.strategy.lr_scheduler_configs = [lr_scheduler_config]

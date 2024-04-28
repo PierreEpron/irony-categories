@@ -61,16 +61,18 @@ test_loader = P.make_loader(test_set, tokenizer, training_config.test_batch_size
 
 ##### Train model #####
 
-lr_monitor = LearningRateMonitor(logging_interval='step')
-ckpt_callback = M.CkptCallback(ckpt_path=training_config.result_path)
 weighted_loss = M.WeightedLossCallback()
+lr_scheduler = M.LRSchedulerCallback()
+lr_monitor = LearningRateMonitor(logging_interval=None)
+ckpt_callback = M.CkptCallback(ckpt_path=training_config.result_path)
 
 trainer = L.Trainer(
     max_epochs=training_config.max_epochs,
     gradient_clip_val=training_config.gradient_clip_val,
     enable_checkpointing=False,
     logger=M.get_plt_loggers(training_config.result_path),
-    callbacks=[weighted_loss, lr_monitor, ckpt_callback]
+    callbacks=[weighted_loss, lr_scheduler, lr_monitor, ckpt_callback],
+    log_every_n_steps=1
 )
 
 trainer.fit(
@@ -78,6 +80,7 @@ trainer.fit(
     train_dataloaders=train_loader, 
     val_dataloaders=val_loader
 )
+
 
 ##### Evaluate model #####
 
