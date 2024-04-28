@@ -68,7 +68,7 @@ ckpt_callback = M.CkptCallback(ckpt_path=training_config.result_path)
 
 trainer = L.Trainer(
     max_epochs=training_config.max_epochs,
-    gradient_clip_val=training_config.gradient_clip_val,
+    gradient_clip_val=training_config.gradient_clip_val if training_config.gradient_clip_val != 0 else None,
     enable_checkpointing=False,
     logger=M.get_plt_loggers(training_config.result_path),
     callbacks=[weighted_loss, lr_scheduler, lr_monitor, ckpt_callback],
