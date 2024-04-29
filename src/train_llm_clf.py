@@ -105,6 +105,9 @@ if __name__ == "__main__":
 
         base_path = Path(training_config.result_path)
 
+        if not base_path.is_dir():
+            base_path.mkdir()
+
         device_map={"":0}
         torch_dtype=torch.bfloat16
 
