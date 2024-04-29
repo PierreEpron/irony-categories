@@ -15,7 +15,7 @@ from src.tools.split_data import get_split
 from src.utils import get_hf_token, write_jsonl
 
 
-def run(llm_config, peft_config, clf_config, training_config, llm_model=None):
+def run(llm_config, peft_config, clf_config, training_config):
 
     ##### Load tokenizer and model #####
 
@@ -24,7 +24,6 @@ def run(llm_config, peft_config, clf_config, training_config, llm_model=None):
 
     model = M.LLMClassifier(
         llm_config, 
-        llm_model=llm_model,
         clf_config=clf_config, 
         peft_config=peft_config, 
         training_config=training_config, 
