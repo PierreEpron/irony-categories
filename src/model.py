@@ -44,8 +44,8 @@ class PeftConfig:
 @dataclass
 class TrainingConfig:
 
-    current_split: int = field(metadata={"help": "The cross validation split to use (between 0 and 4)"})
     result_path: str = field(metadata={"help": "The path used to store results"})
+    current_split: Optional[int] = field(default=-1, metadata={"help": "The cross validation split to use (between 0 and 4). -1 is used to run on all splits"})
 
     split_path: Optional[str] = field(default="data/sem_eval/splits.jsonl", metadata={"help":"The jsonl file path containing the cross validation split indices"})
 
