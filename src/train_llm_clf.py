@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
         for i in range(5):  
            training_config.current_split = i
-           training_config.result_path = base_path / f"{base_path.parts[-1]}_{i}"
+           training_config.result_path = str(base_path / f"{base_path.parts[-1]}_{i}")
            run(llm_config, peft_config, clf_config, training_config, llm_model=llm_model)
 
     else:
