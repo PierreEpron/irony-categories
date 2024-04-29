@@ -103,7 +103,6 @@ class LLMClassifier(L.LightningModule):
     def __init__(
         self, 
         llm_config,
-        llm_model = None,
         peft_config = None,
         peft_model_name = None, 
         clf_config = None, 
@@ -116,12 +115,7 @@ class LLMClassifier(L.LightningModule):
         
         super().__init__()
 
-        if llm_model == None:
-            self.load_llm(llm_config, device_map=device_map, torch_dtype=torch_dtype, hf_token=hf_token)
-        else:
-            self.llm_config = llm_config
-            self.llm_model = llm_model
-
+        self.load_llm(llm_config, device_map=device_map, torch_dtype=torch_dtype, hf_token=hf_token)
         self.load_adapter(peft_config, peft_model_name)
         self.load_classifier(clf_config, clf_model_name)
         self.training_config = training_config

@@ -1,3 +1,4 @@
+from copy import deepcopy
 from pathlib import Path
 
 from lightning.pytorch.callbacks import LearningRateMonitor
@@ -108,28 +109,10 @@ if __name__ == "__main__":
         if not base_path.is_dir():
             base_path.mkdir()
 
-        device_map={"":0}
-        torch_dtype=torch.bfloat16
-
-        quantization_config = None
-        if llm_config.load_in_4bit or llm_config.load_in_8bit:
-            quantization_config = BitsAndBytesConfig(
-                load_in_8bit=llm_config.load_in_8bit, 
-                load_in_4bit=llm_config.load_in_4bit
-            )
-
-        llm_model = AutoModel.from_pretrained(
-            llm_config.model_name,
-            quantization_config=quantization_config,
-            device_map=device_map,
-            torch_dtype=torch_dtype,
-            token=get_hf_token()
-        )
-
         for i in range(5):  
            training_config.current_split = i
-           training_config.result_path = str(base_path / f"{base_path.parts[-1]}_{i}")
-           run(llm_config, peft_config, clf_config, training_config, llm_model=llm_model)
+           training_config.result_path = str(base_path / f"{base_path.parts[-1]}_{i}")  
+           run(llm_config, peft_config, clf_config, training_config)
 
     else:
         run(llm_config, peft_config, clf_config, training_config)
