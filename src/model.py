@@ -34,6 +34,7 @@ class PretrainedLLMConfig:
 @dataclass
 class PeftConfig:
 
+    use_lora: Optional[bool] = field(default=True, metadata={"Either to add or no a LoRA adapter to the LLM. If False all the other parameters are useless."})
     lora_r: Optional[int] = field(default=64, metadata={"help": "the r parameter of the LoRA adapter"})
     lora_alpha: Optional[int] = field(default=16, metadata={"help": "the alpha parameter of the LoRA adapter"})
     target_modules: Optional[str] = field(default="q_proj,v_proj", metadata={"help": "layers to plug LoRA adapter. Splitted by comma."})
@@ -155,7 +156,7 @@ class LLMClassifier(L.LightningModule):
     def load_adapter(self, peft_config = None, peft_model_name = None):
         assert not peft_config or not peft_model_name, f"Both `peft_config` and `peft_model_name` are not None/False."
 
-        if peft_config:
+        if peft_config and peft_config.use_lora:
             self.peft_config = peft_config
             self.llm_model = get_peft_model(self.llm_model, LoraConfig(
                 r=self.peft_config.lora_alpha,
