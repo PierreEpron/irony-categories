@@ -230,8 +230,8 @@ class LLMClassifier(L.LightningModule):
             self.peft_config = peft_config
             if self.peft_config.use_lora:
                 self.llm_model = get_peft_model(self.llm_model, LoraConfig(
-                    r=self.peft_config.lora_alpha,
-                    lora_alpha=self.peft_config.lora_r,
+                    r=self.peft_config.lora_r,
+                    lora_alpha=self.peft_config.lora_alpha,
                     target_modules=self.peft_config.target_modules.split(','),
                     lora_dropout=self.peft_config.lora_dropout,
                     bias=self.peft_config.lora_bias,
