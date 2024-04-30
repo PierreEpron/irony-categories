@@ -22,6 +22,15 @@ class FFClassifierConfig:
     cls_token_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states token to use as input for classification."})
 
 @dataclass
+class MLPClassifierConfig:
+    input_size: Optional[int] = field(default=4096, metadata={"help":"Size of input. Should be equal to the hidden_states size of the LLM used as input."})
+    n_layers: Optional[int] = field(default=1, metadata={"help":"Number of hidden layers before output layer. Input is divided by 2 for each layer."})
+    num_labels: Optional[int] = field(default=4, metadata={"help":"Number of labels. Used as output size of logits."})
+    dropout_rate: Optional[float] = field(default=0.5, metadata={"help":"Dropout rate to use for each dropout layer of the classifier. A dropout layer is added after the activation function of each hidden layer."})
+    hidden_states_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states block to use as input for classification."})
+    cls_token_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states token to use as input for classification."})
+
+@dataclass
 class PretrainedLLMConfig:
     model_name: Optional[str] = field(default="meta-llama/Llama-2-7b-chat-hf", metadata={"help": "pretrain model name for huggingface."})
     # tokenizer args
@@ -64,23 +73,11 @@ class TrainingConfig:
     max_len: Optional[int] = field(default=105, metadata={"help":"Maximum length of a tokenized example. If greater than this length, drop the example."})
 
 
-class FFClassifer(torch.nn.Module):
-
-    def __init__(
-        self,
-        config
-    ): 
+class BaseClassifer(torch.nn.Module):
+    def __init__(self, config):
         super().__init__()
         self.config = config
-        self.output_layer = torch.nn.Linear(self.config.input_size, self.config.num_labels)
 
-    def forward(self, inputs):
-
-        logits = self.output_layer(inputs['hidden_states'][self.config.hidden_states_idx])
-        pooled_logits = logits[:, self.config.cls_token_idx]
-        
-        return pooled_logits
-    
     def save(self, path):
         
         path = Path(path) if isinstance(path, str) else path
@@ -100,7 +97,59 @@ class FFClassifer(torch.nn.Module):
         model.load_state_dict(torch.load(path / "clf_model.bin"))
 
         return config, model
-    
+
+
+class FFClassifer(BaseClassifer):
+    def __init__(self, config): 
+        super().__init__(config)
+        
+        self.output_layer = torch.nn.Linear(self.config.input_size, self.config.num_labels)
+
+    def forward(self, inputs):
+
+        logits = self.output_layer(inputs['hidden_states'][self.config.hidden_states_idx])
+        pooled_logits = logits[:, self.config.cls_token_idx]
+        
+        return pooled_logits
+
+
+class MLPBlock(BaseClassifer):
+    def __init__(self, input_size, output_size, dropout_rate, act_func):
+        super().__init__()
+
+        self.layer = torch.nn.Linear(input_size, output_size)
+        self.act_func = act_func
+        self.dropout = torch.nn.Dropout(dropout_rate)
+
+    def forward(self, inputs):
+        return self.dropout(self.act_func(self.layer(inputs)))
+
+class MLPClassifier(torch.nn.Module):
+    def __init__(self, config): 
+        super().__init__(config)
+
+        self.hidden_layers = []
+
+        input_size = self.config.input_size
+        for _ in range(self.config.n_layers):
+            output_size = self.config.input_size // 2
+            self.hidden_layers.append(MLPBlock(input_size, output_size, self.config.dropout_rate, torch.nn.ReLU()))
+            input_size = output_size
+
+        self.hidden_layers = torch.nn.ModuleList(self.hidden_layers)
+        self.output_layer = torch.nn.Linear(input_size, self.config.num_labels)
+
+    def forward(self, inputs):
+
+        print(inputs.shape)
+        logits = self.output_layer(self.hidden_layers(inputs['hidden_states'][self.config.hidden_states_idx]))
+        print(inputs.shape)
+        pooled_logits = logits[:, self.config.cls_token_idx]
+        print(pooled_logits.shape)
+        
+        return pooled_logits
+
+
 class LLMClassifier(L.LightningModule):
     def __init__(
         self, 
