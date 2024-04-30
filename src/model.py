@@ -57,9 +57,8 @@ class TrainingConfig:
 
     result_path: str = field(metadata={"help": "The path used to store results"})
     current_split: Optional[int] = field(default=-1, metadata={"help": "The cross validation split to use (between 0 and 4). -1 is used to run on all splits"})
-
     split_path: Optional[str] = field(default="data/sem_eval/splits.jsonl", metadata={"help":"The jsonl file path containing the cross validation split indices"})
-
+    clf_class: Optional[str] = field(default="ff", metadata={"help":"Keyword used to recover correct classifier class: [ff, mlp]"})
     lr_peft: Optional[float] = field(default=1.5e-4, metadata={"help":"Learning rate for peft adapater on LLM"})
     lr_clf: Optional[float] = field(default=1e-3, metadata={"help":"Learning rate for classifier"})
     weighted_loss: Optional[str] = field(default="no", metadata={"help":"Method to use for weight loss"})
@@ -74,6 +73,8 @@ class TrainingConfig:
 
 
 class BaseClassifer(torch.nn.Module):
+    config_class = None
+
     def __init__(self, config):
         super().__init__()
         self.config = config
@@ -91,7 +92,7 @@ class BaseClassifer(torch.nn.Module):
     def load(cls, path):
         path = Path(path) if isinstance(path, str) else path
 
-        config = FFClassifierConfig(**json.loads((path / "clf_config.json").read_text(encoding='utf-8')))
+        config = cls.config_class(**json.loads((path / "clf_config.json").read_text(encoding='utf-8')))
 
         model = cls(config)
         model.load_state_dict(torch.load(path / "clf_model.bin"))
@@ -100,6 +101,8 @@ class BaseClassifer(torch.nn.Module):
 
 
 class FFClassifer(BaseClassifer):
+    config_class = FFClassifierConfig
+
     def __init__(self, config): 
         super().__init__(config)
         
@@ -113,7 +116,7 @@ class FFClassifer(BaseClassifer):
         return pooled_logits
 
 
-class MLPBlock(BaseClassifer):
+class MLPBlock(torch.nn.Module):
     def __init__(self, input_size, output_size, dropout_rate, act_func):
         super().__init__()
 
@@ -124,7 +127,9 @@ class MLPBlock(BaseClassifer):
     def forward(self, inputs):
         return self.dropout(self.act_func(self.layer(inputs)))
 
-class MLPClassifier(torch.nn.Module):
+class MLPClassifier(BaseClassifer):
+    config_class = MLPClassifierConfig
+
     def __init__(self, config): 
         super().__init__(config)
 
@@ -141,14 +146,21 @@ class MLPClassifier(torch.nn.Module):
 
     def forward(self, inputs):
 
-        print(inputs.shape)
-        logits = self.output_layer(self.hidden_layers(inputs['hidden_states'][self.config.hidden_states_idx]))
-        print(inputs.shape)
+        logits = inputs['hidden_states'][self.config.hidden_states_idx]
+
+        for layer in self.hidden_layers:
+            logits = layer(logits)
+
+        logits = self.output_layer(logits)
         pooled_logits = logits[:, self.config.cls_token_idx]
-        print(pooled_logits.shape)
         
         return pooled_logits
 
+
+CLF_MODULE_MAP = {
+    "ff":FFClassifer,
+    "mlp":MLPClassifier
+}
 
 class LLMClassifier(L.LightningModule):
     def __init__(
@@ -166,10 +178,11 @@ class LLMClassifier(L.LightningModule):
         
         super().__init__()
 
+        self.training_config = training_config
+
         self.load_llm(llm_config, device_map=device_map, torch_dtype=torch_dtype, hf_token=hf_token)
         self.load_adapter(peft_config, peft_model_name)
         self.load_classifier(clf_config, clf_model_name)
-        self.training_config = training_config
 
         # TODO: Better way to handle
         self.clf_model.to(dtype=torch_dtype)
@@ -237,11 +250,13 @@ class LLMClassifier(L.LightningModule):
     def load_classifier(self, clf_config=None, clf_model_name=None):
         assert not clf_config or not clf_model_name, f"Both `clf_config` and `clf_model_name` are not None/False."
         
+        clf_class = CLF_MODULE_MAP[self.training_config.clf_class]
+
         if clf_config:
             self.clf_config = clf_config
-            self.clf_model = FFClassifer(clf_config)
+            self.clf_model = clf_class(clf_config)
         elif clf_model_name:
-            self.config, self.clf_model = FFClassifer.load(clf_model_name)
+            self.config, self.clf_model = clf_class.load(clf_model_name)
         else:
             raise AttributeError("Neither `clf_config` nor `clf_model_name` are valid.")
 
@@ -254,7 +269,8 @@ class LLMClassifier(L.LightningModule):
         (path / "peft_config.json").write_text(json.dumps(self.peft_config.__dict__), encoding='utf-8')
         # TODO: Should be optional 
         (path / "training_config.json").write_text(json.dumps(self.training_config.__dict__), encoding='utf-8')
-        self.llm_model.save_pretrained(path)
+        if self.peft_config.use_lora:
+            self.llm_model.save_pretrained(path)
         self.clf_model.save(path)
 
     @classmethod

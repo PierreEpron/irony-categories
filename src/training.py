@@ -1,11 +1,7 @@
-from copy import deepcopy
 from pathlib import Path
 
 from lightning.pytorch.callbacks import LearningRateMonitor
-from transformers import (
-    HfArgumentParser,
-    AutoTokenizer
-)
+from transformers import AutoTokenizer
 import lightning as L
 
 from src import model as M
@@ -15,7 +11,7 @@ from src.tools.split_data import get_split
 from src.utils import get_hf_token, write_jsonl
 
 
-def run(llm_config, peft_config, clf_config, training_config):
+def tran_model(llm_config, peft_config, clf_config, training_config):
 
     ##### Load tokenizer and model #####
 
@@ -89,19 +85,9 @@ def run(llm_config, peft_config, clf_config, training_config):
     )
     write_jsonl(Path(training_config.result_path) / "predictions.jsonl", predictions)
 
-
-if __name__ == "__main__":
+def run(llm_config, peft_config, clf_config, training_config):
     
-
-    ##### Parse args and instantiate configs #####
-
-    parser = HfArgumentParser([M.PretrainedLLMConfig, M.PeftConfig, M.FFClassifierConfig, M.TrainingConfig])
-    llm_config, peft_config, clf_config, training_config = parser.parse_args_into_dataclasses()
-
     if training_config.current_split == -1:
-
-        from transformers import AutoModel, BitsAndBytesConfig
-        import torch
 
         base_path = Path(training_config.result_path)
 
@@ -109,9 +95,9 @@ if __name__ == "__main__":
             base_path.mkdir()
 
         for i in range(5):  
-           training_config.current_split = i
-           training_config.result_path = str(base_path / f"{base_path.parts[-1]}_{i}")  
-           run(llm_config, peft_config, clf_config, training_config)
+            training_config.current_split = i
+            training_config.result_path = str(base_path / f"{base_path.parts[-1]}_{i}")  
+            tran_model(llm_config, peft_config, clf_config, training_config)
 
     else:
-        run(llm_config, peft_config, clf_config, training_config)
+        tran_model(llm_config, peft_config, clf_config, training_config)
