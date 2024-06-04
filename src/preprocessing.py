@@ -5,6 +5,13 @@ from torch.utils.data import DataLoader
 from datasets import Dataset
 import torch
 
+TRAIN_PATH = "data/sem_eval/train_emoji.tsv"
+TEST_PATH = "data/sem_eval/test_emoji.tsv"
+
+CLASS_LABELS = ["No Irony", "Irony by Clash", "Situational Irony", "Other Irony"]
+LABEL_2_ID = {c:i for i, c in enumerate(CLASS_LABELS)}
+ID_2_LABEL = {i:c for i, c in enumerate(CLASS_LABELS)}
+
 HASHTAG_LABELS_PATTERN = re.compile(r'#(irony|sarcasm)', flags=re.I)
 HASHTAG_NOT_PATTERN = re.compile(r'#not', flags=re.I)
 URL_PATTERN = re.compile("https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)", flags=re.I)
@@ -37,8 +44,8 @@ def load_semeval_taskb(
         f"return_sets should be set to 'all', 'full' or 'splits'. Given value {return_sets}"
 
     # Load tsv files
-    train = pd.read_csv('data/sem_eval/train_emoji.tsv', sep='\t', encoding='utf-8')
-    test = pd.read_csv('data/sem_eval/test_emoji.tsv', sep='\t', encoding='utf-8')
+    train = pd.read_csv(TRAIN_PATH, sep='\t', encoding='utf-8')
+    test = pd.read_csv(TEST_PATH, sep='\t', encoding='utf-8')
 
     # set example ids
     train['example_id'] = train.example_id.apply(lambda x: f"train_{x}")
@@ -88,7 +95,6 @@ def load_semeval_taskb(
     # If `return_sets` is 'all' return the train test concatenation and train and test independantly
     return full, train, test
 
-from torch.utils.data import DataLoader
 def tokenize_example(example, tokenizer, turns, num_classes=4):
     
     # Copy and format turns
@@ -111,8 +117,9 @@ def tokenize_example(example, tokenizer, turns, num_classes=4):
 
 def make_dataset(examples, tokenizer, turns, max_len=105, num_classes=4):
     examples = Dataset.from_list(examples.to_dict(orient="records"))
-    examples = examples.map(lambda x: tokenize_example(x, tokenizer, turns))
-    examples = examples.filter(lambda x: len(x['input_ids']) < max_len)
+    examples = examples.map(lambda x: tokenize_example(x, tokenizer, turns, num_classes))
+    if max_len > 0:
+        examples = examples.filter(lambda x: len(x['input_ids']) < max_len)
     return examples
 
 def collate_key(batch, key):

@@ -11,7 +11,7 @@ from src.tools.split_data import get_split
 from src.utils import get_hf_token, write_jsonl
 
 
-def tran_model(llm_config, peft_config, clf_config, training_config):
+def train_model(llm_config, peft_config, clf_config, training_config):
 
     ##### Load tokenizer and model #####
 
@@ -97,7 +97,7 @@ def run(llm_config, peft_config, clf_config, training_config):
         for i in range(5):  
             training_config.current_split = i
             training_config.result_path = str(base_path / f"{base_path.parts[-1]}_{i}")  
-            tran_model(llm_config, peft_config, clf_config, training_config)
+            train_model(llm_config, peft_config, clf_config, training_config)
 
     else:
-        tran_model(llm_config, peft_config, clf_config, training_config)
+        train_model(llm_config, peft_config, clf_config, training_config)

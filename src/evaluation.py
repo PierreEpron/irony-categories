@@ -1,53 +1,13 @@
+from collections import defaultdict
+from pathlib import Path
+
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics import matthews_corrcoef
-
+import seaborn as sns
+import pandas as pd
 import numpy as np
 
-ID_2_LABEL = {
-        0:"No Irony",
-        1:"Irony by Clash",
-        2:"Situational Irony",
-        3:"Other Irony"
-}
-
-##### Fleiss Kappa ######
-
-
-def convert_to_A(y):
-    ''' Convert given list of label for Task A fleiss kappa (0=0, {1,2,3}=1) '''
-    return [0 if v == 0 else 1 for v in y]
-
-def convert_to_B(y):
-    ''' Convert given list of label for Task B fleiss kappa (0=0, 1=1, {2,3}=2) '''
-    return [v if v < 2 else 2 for v in y]
-
-def fleiss_kappa(y_true, y_pred):
-    ''' 
-        Compute fleiss kappa score for a given list of true labels and predicted labels.
-        This is not an complete fleiss kappa implementation. It only work for two "annotators".
-    '''
-    N = len(y_true)
-    k = len(set(y_true))
-
-    x = np.zeros((N, k))
-    for _k in range(k):
-        x[:, _k] = (np.array(y_true) == _k).astype(int) + (np.array(y_pred) == _k).astype(int)
-
-    n = x[0].sum()
-    pi = np.sum(1 / (n*(n-1)) * (np.sum(x**2, axis=1) - n)) / x.shape[0]
-    pj = np.sum((np.sum(x, axis=0) / (n * x.shape[0])) ** 2)
-    kappa = (pi-pj) / (1-pj) 
-
-    return kappa
-
-def get_A_B_fleiss_kappa(y_true, y_pred):
-    ''' 
-        Compute and return fleiss kappa for task A and task B
-    '''
-    return (
-        fleiss_kappa(convert_to_A(y_true), convert_to_A(y_pred)),
-        fleiss_kappa(convert_to_B(y_true), convert_to_B(y_pred))
-    )
+from src.preprocessing import ID_2_LABEL
 
 ##### Evaluation Report #####
 
@@ -56,9 +16,78 @@ def eval_report(y_true, y_pred, id_2_label=ID_2_LABEL):
 
     print(classification_report(y_true, y_pred, target_names=list(id_2_label.values())))
     print("MCC:", matthews_corrcoef(y_true, y_pred))
-    fleiss_A, fleiss_B = get_A_B_fleiss_kappa(y_true, y_pred)
-    print("Fleiss K:")
-    print("\tTask A:", fleiss_A)
-    print("\tTask B:", fleiss_B)
     ConfusionMatrixDisplay(confusion_matrix(y_true, y_pred), display_labels=list(id_2_label.values())).plot(xticks_rotation="vertical") 
 
+
+def grouped_eval_report(splits, id_2_label=ID_2_LABEL):
+    outputs = defaultdict(list)   
+
+    for y_true, y_pred in splits:
+
+
+        for k, v in classification_report(y_true, y_pred, target_names=list(id_2_label.values()), output_dict=True).items():
+            
+            if isinstance(v, dict): # TODO: Maybe recursive func ...
+                for kk, vv in v.items():
+                    outputs[f"{k}_{kk}"].append(vv)
+            else:
+                outputs[k].append(v)
+
+
+        outputs["mcc"].append(matthews_corrcoef(y_true, y_pred))
+
+    return outputs
+
+
+def format_grouped_results(splits, target_columns, cell_format="{mean:.3f} ({std:.3f})"):
+
+    headers, rows = [], []
+    for k, v in pd.DataFrame.from_dict(grouped_eval_report(splits)).describe()[target_columns].to_dict().items():
+        headers.append(k)
+        rows.append(cell_format.format(**v))
+
+    print('\t'.join(headers))
+    print('\t'.join(rows))
+
+
+##### Confusion Matrix #####
+
+
+def grouped_confusion_matrix(splits, id_2_label=ID_2_LABEL):
+    full_true, full_pred = [], []
+    for y_true, y_pred in splits:
+        full_true += y_true
+        full_pred += y_pred
+
+    ConfusionMatrixDisplay(confusion_matrix(full_true, full_pred), display_labels=list(id_2_label.values())).plot(xticks_rotation="vertical")  
+
+##### Loss Graph #####
+
+
+def extract_epoch_metrics(df, path, loop='train'):
+    outputs = []
+    for item in df[df[f'{loop}_loss'].isna() == False].to_dict(orient='records'):
+        record = {
+            'ex_name':path.parts[1],
+            'ex_split':path.parts[2].split('_')[-1],
+            'epoch':item['epoch'],
+            'loop':loop,
+        }
+
+        outputs.append({**record, 'value_name':'loss', 'value':item[f'{loop}_loss']})
+        outputs.append({**record, 'value_name':'mcc', 'value':item[f'{loop}_mcc']})
+
+    return outputs
+
+
+def plot_epoch_metrics(target_folder):
+    outputs = []
+
+    for path in Path('results').glob(f'{target_folder}/{target_folder}_*/cv_logs/{target_folder}_*/version_0/metrics.csv'):
+        df = pd.read_csv(path)
+        outputs += extract_epoch_metrics(df, path, loop='train')
+        outputs += extract_epoch_metrics(df, path, loop='val')
+    
+    df = pd.DataFrame.from_dict(outputs)
+    g = sns.FacetGrid(data=df, col="ex_name", row='value_name', hue='loop', sharey='row', height=6)
+    g.map(sns.lineplot, "epoch", "value")
