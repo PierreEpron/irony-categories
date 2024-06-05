@@ -79,11 +79,9 @@ def mink_prob(scores, k=20):
 with torch.no_grad():
     for example in tqdm(data):
         input_ids = tokenizer.encode(example['text'], return_tensors='pt').to(llm_model.device)
-        outputs = llm_model(input_ids)
+        outputs = llm_model(input_ids, return_dict=True)
 
-        logits = outputs[:2]
-
-        print(logits[0])
+        logits = outputs['logits']
 
         scores = torch.nn.functional.log_softmax(logits, dim=-1)
         gold_scores = scores[0, torch.arange(input_ids.shape[-1]-1), input_ids[0][1:]]
