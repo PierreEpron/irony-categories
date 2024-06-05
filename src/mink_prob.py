@@ -83,6 +83,7 @@ with torch.no_grad():
 
         print(outputs)
         print(outputs.keys())
+        print(llm_model)
 
         logits = outputs['logits']
 
