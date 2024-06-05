@@ -81,7 +81,7 @@ for example in tqdm(data):
 
   input_ids = tokenizer.encode(example['text'], return_tensors='pt').to(llm_model.device)
   with torch.no_grad():
-      outputs = llm_model(input_ids, labels=input_ids)
+      outputs = llm_model(input_ids)
 
   loss, logits = outputs[:2]
 
