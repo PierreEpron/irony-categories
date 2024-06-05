@@ -81,6 +81,9 @@ with torch.no_grad():
         input_ids = tokenizer.encode(example['text'], return_tensors='pt').to(llm_model.device)
         outputs = llm_model(input_ids, return_dict=True)
 
+        print(outputs)
+        print(outputs.keys())
+
         logits = outputs['logits']
 
         scores = torch.nn.functional.log_softmax(logits, dim=-1)
