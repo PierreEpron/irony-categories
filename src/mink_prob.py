@@ -7,7 +7,7 @@ from transformers import (
     HfArgumentParser,
     BitsAndBytesConfig,
     AutoTokenizer,
-    AutoModel
+    AutoModelForCausalLM
 )
 import torch
 
@@ -44,7 +44,7 @@ if llm_config.load_in_4bit or llm_config.load_in_8bit:
     )
     
 
-llm_model = AutoModel.from_pretrained(
+llm_model = AutoModelForCausalLM.from_pretrained(
     llm_config.model_name,
     quantization_config=quantization_config,
     device_map=device_map,
@@ -80,10 +80,6 @@ with torch.no_grad():
     for example in tqdm(data):
         input_ids = tokenizer.encode(example['text'], return_tensors='pt').to(llm_model.device)
         outputs = llm_model(input_ids, return_dict=True)
-
-        print(outputs)
-        print(outputs.keys())
-        print(llm_model)
 
         logits = outputs['logits']
 
