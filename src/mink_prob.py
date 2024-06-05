@@ -76,19 +76,17 @@ def mink_prob(scores, k=20):
     # Compute and return the average.
     return -topk_prob.mean().item()
 
+with torch.no_grad():
+    for example in tqdm(data):
+        input_ids = tokenizer.encode(example['text'], return_tensors='pt').to(llm_model.device)
+        outputs = llm_model(input_ids)
 
-for example in tqdm(data):
+        logits = outputs[:2]
 
-  input_ids = tokenizer.encode(example['text'], return_tensors='pt').to(llm_model.device)
-  with torch.no_grad():
-      outputs = llm_model(input_ids)
+        scores = torch.nn.functional.log_softmax(logits, dim=-1)
+        gold_scores = scores[0, torch.arange(input_ids.shape[-1]-1), input_ids[0][1:]]
 
-  loss, logits = outputs[:2]
-
-  scores = torch.nn.functional.log_softmax(logits, dim=-1)
-  gold_scores = scores[0, torch.arange(input_ids.shape[-1]-1), input_ids[0][1:]]
-
-  example['mink_prob'] = mink_prob(gold_scores, script_config.k)
+        example['mink_prob'] = mink_prob(gold_scores, script_config.k)
 
 write_jsonl(script_config.result_path, data)
 
