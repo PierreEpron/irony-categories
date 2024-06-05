@@ -83,7 +83,7 @@ with torch.no_grad():
 
         logits = outputs[:2]
 
-        print(logits)
+        print(logits[0])
 
         scores = torch.nn.functional.log_softmax(logits, dim=-1)
         gold_scores = scores[0, torch.arange(input_ids.shape[-1]-1), input_ids[0][1:]]
