@@ -1,0 +1,9 @@
+{
+	"Non-verbal Irony": {
+	"Situational Irony": {
+	  "Situation Description":"Firefighters who have a fire in their kitchen while they are out to answer a fire alarm.",
+	  "Unexpected Property":"The fire in the firefighters' kitchen."
+	},
+	"External Knowledges": ["One of the firefighters' missions is to put out the fire."]
+	}
+}

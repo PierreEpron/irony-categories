@@ -1,0 +1,6 @@
+{
+    "No Irony":"The following tweet does not express irony.\n\nTweet: \"{text}\"\n\nExplain why in short paragraph.",
+    "Irony by Clash":"The following tweet expresses irony by polarity contrast: a switch in evaluation polarity between the literal and intended meanings of a statement",
+    "Situational Irony":"The following tweet expresses situational irony: a situation that fail to meet some expectation.\n\nTweet: \"{text}\"\n\nExplain why in short paragraph.",
+    "Other Irony":"The following tweet expresses irony.\n\nTweet: \"{text}\"\n\nExplain why in short paragraph."
+}
