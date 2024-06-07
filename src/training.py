@@ -33,7 +33,7 @@ def train_model(llm_config, peft_config, clf_config, training_config):
 
     ##### Load and preprocess data #####
 
-    train, test = P.load_semeval_taskb(return_sets="splits", urls=False, lower=False)
+    train, test = P.SemEval.load_data(return_sets="splits", urls=False, lower=False)
     train, val = get_split(training_config.current_split, training_config.split_path, train)
 
     turns = [{"role": "user", "content": "{text}"}]

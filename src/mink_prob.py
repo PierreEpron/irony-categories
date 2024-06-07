@@ -12,7 +12,7 @@ from transformers import (
 import torch
 
 # from src.preprocessing import load_data
-from src.preprocessing import load_semeval_taskb
+from src.preprocessing import SemEval
 from src.utils import get_hf_token, write_jsonl
 from src import model as M
 
@@ -53,7 +53,7 @@ llm_model = AutoModelForCausalLM.from_pretrained(
 )
 
 
-data = load_semeval_taskb(
+data = SemEval.load_data(
     return_sets="full",
     hashtag_labels=False,
     hashtag_nots=False,
@@ -90,3 +90,4 @@ with torch.no_grad():
 
 write_jsonl(script_config.result_path, data)
 
+#  python -m src.mink_prob --result_path="results/mink/llama2-7b_k20.jsonl" --model_name="meta-llama/Llama-2-7b-chat-hf"

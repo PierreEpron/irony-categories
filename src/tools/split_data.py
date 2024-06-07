@@ -3,7 +3,7 @@ from typing import Optional
 from sklearn.model_selection import StratifiedShuffleSplit
 from transformers import HfArgumentParser
 
-from src.preprocessing import load_semeval_taskb
+from src.preprocessing import SemEval
 from src.utils import read_jsonl, write_jsonl
 
 @dataclass
@@ -19,7 +19,7 @@ def get_split(split_id, splits_path, dataset):
     return dataset.loc[split['train']], dataset.loc[split['test']] # test -> val
 
 def split_data(output_file, target_column, n_splits, test_size):
-    train, _ = load_semeval_taskb(return_sets='splits')
+    train, _ = SemEval.load_data(return_sets='splits')
     y = train[target_column]
     sss = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size)
     splits = [{'train':train.tolist(), 'test':test.tolist()} for train, test in sss.split(train, y)]
