@@ -70,7 +70,7 @@ elif script_config.dataset == "goemotions":
     data = GoEmotions.load_data(return_sets="full")
 
 else:
-    raise AttributeError(f"Arguments `dataset` not a valid value: {ScriptConfig.dataset}. It must be one of these values: ['semeval', 'goemotions']. ")
+    raise AttributeError(f"Arguments `dataset` not a valid value: {script_config.dataset}. It must be one of these values: ['semeval', 'goemotions'].")
  
 
 
