@@ -12,13 +12,14 @@ from transformers import (
 import torch
 
 # from src.preprocessing import load_data
-from src.preprocessing import SemEval
+from src.preprocessing import SemEval, GoEmotions
 from src.utils import get_hf_token, write_jsonl
 from src import model as M
 
 @dataclass
 class ScriptConfig:
-    result_path: Optional[str] = field(metadata={"help":"."})
+    result_path: str = field(metadata={"help":"."})
+    dataset: Optional[str] = field(default="semeval", metadata={"help":"."})
     k: Optional[int] = field(default=20, metadata={"help":"."})
 
 
@@ -52,16 +53,25 @@ llm_model = AutoModelForCausalLM.from_pretrained(
     token=get_hf_token()
 )
 
+# Load correct data
 
-data = SemEval.load_data(
-    return_sets="full",
-    hashtag_labels=False,
-    hashtag_nots=False,
-    users=False,
-    urls=False,
-    spaces=False,
-    lower=False
-).to_dict(orient='records')
+if script_config.dataset == "semeval":
+    data = SemEval.load_data(
+        return_sets="full",
+        hashtag_labels=False,
+        hashtag_nots=False,
+        users=False,
+        urls=False,
+        spaces=False,
+        lower=False
+    ).to_dict(orient='records')
+
+elif script_config.dataset == "goemotions":
+    data = GoEmotions.load_data(return_sets="full")
+
+else:
+    raise AttributeError(f"Arguments `dataset` not a valid value: {ScriptConfig.dataset}. It must be one of these values: ['semeval', 'goemotions']. ")
+ 
 
 
 def mink_prob(scores, k=20):
@@ -90,4 +100,4 @@ with torch.no_grad():
 
 write_jsonl(script_config.result_path, data)
 
-#  python -m src.mink_prob --result_path="results/mink/llama2-7b_k20.jsonl" --model_name="meta-llama/Llama-2-7b-chat-hf"
+#  python -m src.mink_prob --result_path="results/mink/llama2-7b_k20.jsonl" --dataset="goemotions"--model_name="meta-llama/Llama-2-7b-chat-hf"
