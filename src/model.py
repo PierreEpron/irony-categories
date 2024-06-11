@@ -316,7 +316,6 @@ class LLMClassifier(L.LightningModule):
             raise AttributeError(f"`training_config.inference_type` should be equal to ['single_class', 'multi_class'] not to {self.training_config.inference_type}")
 
     def monitoring_metric(self, y_true, y_pred):
-        print(f"monitoring_metric: {len(y_true)} {len(y_pred)}")
         if self.training_config.inference_type == 'single_class':
             return matthews_corrcoef([y.argmax(dim=-1).cpu() for y in y_true], [y.cpu() for y in y_pred])
         elif self.training_config.inference_type == 'multi_class':
@@ -339,7 +338,6 @@ class LLMClassifier(L.LightningModule):
         return loss
     
     def on_train_epoch_end(self):
-        print("on_train_epoch_end")
         
         self.log("train_metric", self.monitoring_metric(self.train_targets, self.train_outputs), on_step=False, on_epoch=True)
         self.train_outputs.clear()
@@ -362,8 +360,6 @@ class LLMClassifier(L.LightningModule):
 
     def on_validation_epoch_end(self):
         
-        print("on_validation_epoch_end")
-
         self.log("val_metric", self.monitoring_metric(self.val_targets, self.val_outputs), on_step=False, on_epoch=True)
         self.val_outputs.clear()
         self.val_targets.clear()
