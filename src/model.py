@@ -13,6 +13,8 @@ import lightning as L
 import numpy as np
 import torch
 
+from src.evaluation import hamming_score
+
 
 @dataclass
 class FFClassifierConfig:
@@ -55,7 +57,8 @@ class PeftConfig:
 @dataclass
 class TrainingConfig:
 
-    result_path: str = field(metadata={"help": "The path used to store results"})
+    result_path: str = field(metadata={"help":"The path used to store results"})
+    dataset: Optional[str] = field(default="semeval", metadata={"help":"The dataset used to train the model."})
     current_split: Optional[int] = field(default=-1, metadata={"help": "The cross validation split to use (between 0 and 4). -1 is used to run on all splits"})
     split_path: Optional[str] = field(default="data/sem_eval/splits.jsonl", metadata={"help":"The jsonl file path containing the cross validation split indices"})
     clf_class: Optional[str] = field(default="ff", metadata={"help":"Keyword used to recover correct classifier class: [ff, mlp]"})
@@ -70,7 +73,8 @@ class TrainingConfig:
     val_batch_size: Optional[int] = field(default=16, metadata={"help":"Size of a validation batch"})
     test_batch_size: Optional[int] = field(default=1, metadata={"help":"Size of a test batch"})
     max_len: Optional[int] = field(default=105, metadata={"help":"Maximum length of a tokenized example. If greater than this length, drop the example."})
-
+    inference_type: Optional[str] = field(default='single_class', metadata={"help":"Define which kind of inference will be use between [`single_class`,`multi_class`]."})
+    multi_class_treshold: Optional[float] = field(default=0.5, metadata={"help":"Treshold used by multi class inference."})
 
 class BaseClassifer(torch.nn.Module):
     config_class = None
@@ -155,6 +159,17 @@ class MLPClassifier(BaseClassifer):
         pooled_logits = logits[:, self.config.cls_token_idx]
         
         return pooled_logits
+
+
+def single_class_inference(logits):
+    scores = logits.softmax(dim=-1)
+    pred = scores.argmax(dim=-1)
+    return scores, pred
+
+def multi_class_inference(logits, treshold=.5):
+    scores = logits.sigmoid()
+    pred = (scores > treshold).to(dtype=logits.dtype)
+    return scores, pred
 
 
 CLF_MODULE_MAP = {
@@ -292,6 +307,24 @@ class LLMClassifier(L.LightningModule):
         logits = self.clf_model(outputs)
         return logits
 
+    def inference(self, logits):
+        if self.training_config.inference_type == 'single_class':
+            return single_class_inference(logits)
+        elif self.training_config.inference_type == 'multi_class':
+            return multi_class_inference(logits, self.training_config.multi_class_treshold)
+        else:
+            raise AttributeError(f"`training_config.inference_type` should be equal to ['single_class', 'multi_class'] not to {self.training_config.inference_type}")
+
+    def monitoring_metric(self, y_true, y_pred):
+        print(f"monitoring_metric: {len(y_true)} {len(y_pred)}")
+        if self.training_config.inference_type == 'single_class':
+            return matthews_corrcoef([y.argmax(dim=-1).cpu() for y in y_true], [y.cpu() for y in y_pred])
+        elif self.training_config.inference_type == 'multi_class':
+            return hamming_score(torch.stack(y_true).to(dtype=torch.int), torch.stack(y_pred).to(dtype=torch.int))
+        else:
+            raise AttributeError(f"`training_config.inference_type` should be equal to ['single_class', 'multi_class'] not to {self.training_config.inference_type}")
+ 
+
     def training_step(self, batch, batch_idx):
 
         logits = self.forward(batch, batch_idx)
@@ -299,15 +332,16 @@ class LLMClassifier(L.LightningModule):
         loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype), weight=self.label_weigths)
         self.log("train_loss", loss, on_step=False, on_epoch=True)
 
-        # TODO: argmax on labels should be avoided. Maybe move label onehot encoding from dataloader to here.
-        self.train_outputs.extend(logits.argmax(dim=-1).cpu())
-        self.train_targets.extend(batch['labels'].argmax(dim=-1).cpu())
+        _, pred = self.inference(logits)
+        self.train_outputs.extend(pred)
+        self.train_targets.extend(batch['labels'])
 
         return loss
     
     def on_train_epoch_end(self):
+        print("on_train_epoch_end")
         
-        self.log("train_mcc", matthews_corrcoef(self.train_outputs, self.train_targets), on_step=False, on_epoch=True)
+        self.log("train_metric", self.monitoring_metric(self.train_targets, self.train_outputs), on_step=False, on_epoch=True)
         self.train_outputs.clear()
         self.train_targets.clear()
     
@@ -319,38 +353,46 @@ class LLMClassifier(L.LightningModule):
         loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype), weight=self.label_weigths)
         self.log("val_loss", loss, on_step=False, on_epoch=True)
 
-        # TODO: argmax on labels should be avoided. Maybe move label onehot encoding from dataloader to here.
-        self.val_outputs.extend(logits.argmax(dim=-1).cpu())
-        self.val_targets.extend(batch['labels'].argmax(dim=-1).cpu())
+        _, pred = self.inference(logits)
+        self.val_outputs.extend(pred)
+        self.val_targets.extend(batch['labels'])
+
+        # self.val_outputs.extend(logits.argmax(dim=-1).cpu())
+        # self.val_targets.extend(batch['labels'].argmax(dim=-1).cpu())
 
     def on_validation_epoch_end(self):
+        
+        print("on_validation_epoch_end")
 
-        self.log("val_mcc", matthews_corrcoef(self.val_outputs, self.val_targets), on_step=False, on_epoch=True)
+        self.log("val_metric", self.monitoring_metric(self.val_targets, self.val_outputs), on_step=False, on_epoch=True)
         self.val_outputs.clear()
         self.val_targets.clear()
 
 
     def predict_step(self, batch, batch_idx):
+        
         logits = self.forward(batch, batch_idx)
-        scores = torch.nn.functional.softmax(logits, dim=-1)
-        pred = scores.argmax(dim=-1)
+        _scores, _pred = self.inference(logits)
 
         predictions = []
 
-        for example_id, label_id, text, scores, pred in zip(
+        for example_id, label_id, text, labels, scores, pred in zip(
             batch['example_id'],
             batch['label_id'],
             batch['text'],
-            scores.cpu().tolist(),
-            pred.cpu()
+            batch['labels'],
+            _scores,
+            _pred
         ):
             predictions.append({
                 'example_id':example_id,
                 'label_id':label_id,
                 'text':text,
-                'scores':scores,
-                'pred':pred.item()
+                'labels':labels.cpu().tolist(),
+                'scores':scores.cpu().tolist(),
+                'pred':pred.cpu().tolist()
             })
+            
         return predictions
 
     
@@ -386,7 +428,7 @@ def get_plt_loggers(path):
 
 
 class CkptCallback(L.Callback):
-    def __init__(self, ckpt_path, metric_name="val_mcc", best_model_metric=-2):
+    def __init__(self, ckpt_path, metric_name="val_metric", best_model_metric=-2):
         self.ckpt_path = ckpt_path
         self.metric_name = metric_name
         self.best_model_metric = best_model_metric

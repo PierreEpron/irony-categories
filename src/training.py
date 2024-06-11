@@ -33,8 +33,15 @@ def train_model(llm_config, peft_config, clf_config, training_config):
 
     ##### Load and preprocess data #####
 
-    train, test = P.SemEval.load_data(return_sets="splits", urls=False, lower=False)
-    train, val = get_split(training_config.current_split, training_config.split_path, train)
+    if training_config.dataset == 'semeval':
+        train, test = P.SemEval.load_data(return_sets="splits", urls=False, lower=False)
+        train, val = get_split(training_config.current_split, training_config.split_path, train)
+
+    elif training_config.dataset == 'goemotions':
+        train, val, test = P.GoEmotions.load_data(return_sets='splits')
+
+    else:
+        raise AttributeError(f"`training_config.dataset` should be equal to ['semeval', 'goemotions'] not to {training_config.dataset}")
 
     turns = [{"role": "user", "content": "{text}"}]
 

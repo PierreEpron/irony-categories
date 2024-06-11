@@ -6,12 +6,27 @@ from sklearn.metrics import matthews_corrcoef
 import seaborn as sns
 import pandas as pd
 import numpy as np
+import torch
 
-from src.preprocessing import ID_2_LABEL
+from src.preprocessing import SemEval
+
+
+def hamming_score(y_true, y_pred):
+    """ from: https://gist.github.com/dschaehi/1ecdb3e53647d62e7daf106266bfa4bc """
+    out = ((y_pred & y_true).sum(dim=1) / (y_pred | y_true).sum(dim=1)).mean()
+    if out.isnan(): out = torch.tensor(1.0)
+    return out
+
+def exact_match_ratio(y_true, y_pred):
+    exact_score = []
+    for p, r in zip(y_pred, y_true):
+        exact_score.append(sorted(p) == sorted(r))
+    return sum(exact_score) / len(exact_score)
+
 
 ##### Evaluation Report #####
 
-def eval_report(y_true, y_pred, id_2_label=ID_2_LABEL):
+def eval_report(y_true, y_pred, id_2_label=SemEval.id_2_label):
     ''' Shortcut to report all metrics for a given list of true labels and predicted labels'''
 
     print(classification_report(y_true, y_pred, target_names=list(id_2_label.values())))
@@ -19,7 +34,7 @@ def eval_report(y_true, y_pred, id_2_label=ID_2_LABEL):
     ConfusionMatrixDisplay(confusion_matrix(y_true, y_pred), display_labels=list(id_2_label.values())).plot(xticks_rotation="vertical") 
 
 
-def grouped_eval_report(splits, id_2_label=ID_2_LABEL):
+def grouped_eval_report(splits, id_2_label=SemEval.id_2_label):
     outputs = defaultdict(list)   
 
     for y_true, y_pred in splits:
@@ -53,7 +68,7 @@ def format_grouped_results(splits, target_columns, cell_format="{mean:.3f} ({std
 ##### Confusion Matrix #####
 
 
-def grouped_confusion_matrix(splits, id_2_label=ID_2_LABEL):
+def grouped_confusion_matrix(splits, id_2_label=SemEval.id_2_label):
     full_true, full_pred = [], []
     for y_true, y_pred in splits:
         full_true += y_true
