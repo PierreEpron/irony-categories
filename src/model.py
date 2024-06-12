@@ -271,7 +271,7 @@ class LLMClassifier(L.LightningModule):
             self.clf_config = clf_config
             self.clf_model = clf_class(clf_config)
         elif clf_model_name:
-            self.config, self.clf_model = clf_class.load(clf_model_name)
+            self.clf_config, self.clf_model = clf_class.load(clf_model_name)
         else:
             raise AttributeError("Neither `clf_config` nor `clf_model_name` are valid.")
 
