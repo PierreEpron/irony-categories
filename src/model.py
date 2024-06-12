@@ -307,6 +307,14 @@ class LLMClassifier(L.LightningModule):
         logits = self.clf_model(outputs)
         return logits
 
+    def loss(self, y_true, y_pred):
+        if self.training_config.inference_type == 'single_class':
+            return torch.functional.F.cross_entropy(y_true, y_pred, weight=self.label_weigths)
+        elif self.training_config.inference_type == 'multi_class':
+            return torch.functional.F.binary_cross_entropy_with_logits(y_true, y_pred)
+        else:
+            raise AttributeError(f"`training_config.inference_type` should be equal to ['single_class', 'multi_class'] not to {self.training_config.inference_type}")  
+
     def inference(self, logits):
         if self.training_config.inference_type == 'single_class':
             return single_class_inference(logits)
@@ -328,7 +336,7 @@ class LLMClassifier(L.LightningModule):
 
         logits = self.forward(batch, batch_idx)
         
-        loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype), weight=self.label_weigths)
+        loss = self.loss(logits, batch['labels'].to(logits.dtype), weight=self.label_weigths)
         self.log("train_loss", loss, on_step=False, on_epoch=True)
 
         _, pred = self.inference(logits)
@@ -348,7 +356,7 @@ class LLMClassifier(L.LightningModule):
 
         logits = self.forward(batch, batch_idx)
 
-        loss = torch.functional.F.cross_entropy(logits, batch['labels'].to(logits.dtype), weight=self.label_weigths)
+        loss = self.loss(logits, batch['labels'].to(logits.dtype), weight=self.label_weigths)
         self.log("val_loss", loss, on_step=False, on_epoch=True)
 
         _, pred = self.inference(logits)
