@@ -7,6 +7,12 @@ import torch
 
 from src.utils import read_jsonl
 
+HASHTAG_LABELS_PATTERN = re.compile(r'#(irony|sarcasm)', flags=re.I)
+HASHTAG_NOT_PATTERN = re.compile(r'#not', flags=re.I)
+URL_PATTERN = re.compile("https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)", flags=re.I)
+USER_PATTERN = re.compile(r'@[^\s]+', flags=re.I)
+SPACES_PATTERN = re.compile(r'\s+')
+
 class SemEval:
     
     train_path = "data/sem_eval/train_emoji.tsv"
@@ -94,7 +100,6 @@ class SemEval:
         # If `return_sets` is 'all' return the train test concatenation and train and test independantly
         return full, train, test
 
-
 class GoEmotions:
     
     train_path = "data/go_emotions/train.jsonl"
@@ -132,12 +137,6 @@ class GoEmotions:
         # If `return_sets` is 'all' return the train test concatenation and train and test independantly
         return full, train, dev, test
 
-
-HASHTAG_LABELS_PATTERN = re.compile(r'#(irony|sarcasm)', flags=re.I)
-HASHTAG_NOT_PATTERN = re.compile(r'#not', flags=re.I)
-URL_PATTERN = re.compile("https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)", flags=re.I)
-USER_PATTERN = re.compile(r'@[^\s]+', flags=re.I)
-SPACES_PATTERN = re.compile(r'\s+')
 
 def tokenize_example(example, tokenizer, turns, num_classes=4):
     
