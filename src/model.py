@@ -307,7 +307,7 @@ class LLMClassifier(L.LightningModule):
         logits = self.clf_model(outputs)
         return logits
 
-    def loss(self, y_true, y_pred):
+    def loss(self, y_true, y_pred, weight=None):
         if self.training_config.inference_type == 'single_class':
             return torch.functional.F.cross_entropy(y_true, y_pred, weight=self.label_weigths)
         elif self.training_config.inference_type == 'multi_class':
