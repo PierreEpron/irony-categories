@@ -30,8 +30,6 @@ elif inference_config.dataset == 'goemotions':
 else:
     raise AttributeError(f"`training_config.dataset` should be equal to ['semeval', 'goemotions'] not to {inference_config.dataset}")
 
-print(data)
-
 
 model_name = f"results/{inference_config.model_name}"
 
