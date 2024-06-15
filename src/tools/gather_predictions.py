@@ -26,7 +26,7 @@ if __name__ == "__main__":
         print(HOME_PATH / f"{path.parts[-2]}_{path.parts[-1]}")
 
     for path in tqdm(list(target_path.glob("**/metrics.csv"))):
-        print(HOME_PATH / f"{path.parts[-2]}_{path.parts[-1]}")
+        print(HOME_PATH / f"{path.parts[-3]}_{path.parts[-1]}")
 
 # for path in results_path.glob("*/predictions.jsonl"):
 #     dst = root_path / path.parts[-2]
