@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     target_path = Path(script_args.target_path)
 
-    for path in tqdm(list(target_path.glob("**/predictions.jsonl")) + list(target_path.glob("**/metrics.jsonl"))):
+    for path in tqdm(list(target_path.glob("**/predictions.jsonl")) + list(target_path.glob("**/metrics.csv"))):
         print(path)
 
 
