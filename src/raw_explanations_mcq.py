@@ -112,10 +112,10 @@ with torch.no_grad():
                 generation_config
             )
 
-            example['question'] = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
-            example['answer'] = tokenizer.decode(outputs[0, input_ids.shape[1]:]).strip()
+            new_example['question'] = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
+            new_example['answer'] = tokenizer.decode(outputs[0, input_ids.shape[1]:]).strip()
 
-            results.append(dict(example))
+            results.append(dict(new_example))
             write_jsonl(script_config.result_path, results)
 
 #  python -m src.raw_explanations_mcq --result_path="results/raw_explanations/llama3-8b_base_n20_mcq.jsonl" --model_name="meta-llama/Meta-Llama-3-8B-Instruct"
