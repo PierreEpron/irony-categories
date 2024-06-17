@@ -137,6 +137,13 @@ class GoEmotions:
         # If `return_sets` is 'all' return the train test concatenation and train and test independantly
         return full, train, dev, test
 
+    @staticmethod
+    def parse_label_id(label_id):
+        y = [0] * 28
+        for l in re.split(',|_', label_id):
+            y[int(l)] = 1
+        return y
+
 
 def tokenize_example(example, tokenizer, turns, num_classes=4):
     
