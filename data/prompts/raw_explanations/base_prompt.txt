@@ -1,0 +1,6 @@
+Here is a tweet:
+
+"{text}"
+
+Explain in {n_words} words why this tweet belongs to the category {definition}.
+Put the explanation between []. 
