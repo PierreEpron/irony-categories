@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
+from collections import defaultdict
 from typing import Optional
 from pathlib import Path
-import json
+import re
 
 from transformers import (
     HfArgumentParser,
@@ -14,17 +15,15 @@ from transformers import (
 from tqdm import tqdm
 import torch
 
-from src.preprocessing import SemEval
-from src.utils import get_hf_token, write_jsonl
+from src.utils import get_hf_token, read_jsonl, write_jsonl
 from src import model as M
 
 
 @dataclass
 class ScriptConfig:
     result_path: str = field(metadata={"help":"."})
-    definitions_path: Optional[str] = field(default="data/prompts/raw_explanations/base_defs.json", metadata={"help":"."})
-    prompt_path: Optional[str] = field(default="data/prompts/raw_explanations/base_prompt.txt", metadata={"help":"."})
-    n_words: Optional[int] = field(default=20)
+    examples_path: Optional[str] = field(default="results/raw_explanations/llama3-8b_base_n20.jsonl", metadata={"help":"."})
+    prompt_path: Optional[str] = field(default="data/prompts/raw_explanations/base_mcq_prompt.txt", metadata={"help":"."})
     # Generation
 
 parser = HfArgumentParser([M.PretrainedLLMConfig, ScriptConfig])
@@ -58,12 +57,15 @@ llm_model = AutoModelForCausalLM.from_pretrained(
     token=get_hf_token()
 )
 
-# Load correct data
-_, examples = SemEval.load_data(return_sets="splits", urls=False, lower=False)
-examples = examples.to_dict(orient='records')
 
-definitions = json.loads(Path(script_config.definitions_path).read_text())
+# Load correct data
+examples = defaultdict(list)
+for example in read_jsonl(script_config.examples_path):
+  examples[example['example_id']].append(example)
+
+
 prompt = Path(script_config.prompt_path).read_text()
+
 
 # Setup generation
 
@@ -80,26 +82,40 @@ generation_config = GenerationConfig(
 
 results = []
 
-with torch.no_grad():
-    for example in tqdm(examples):
-        for i, definition in enumerate(definitions):
-            
-            example["n_words"] = script_config.n_words
-            example["definition_id"] = i
-            example["definition"] = definition
+statement_keys = "abcd"
+answer_pattern = re.compile(r"\[([^\]]+)\]")
 
-            turns = [{'role':'user', 'content':prompt.format(**example)}]
+
+with torch.no_grad():
+    for example in tqdm(examples.values()):
+
+        statements = [(statement["definition_id"], answer_pattern.findall(statement["answer"])[0]) for statement in example]
+
+        new_example = {
+            'example_id': example[0]['example_id'],
+            'label_id': example[0]['label_id'],
+            'text': example[0]['text'],
+            'n_words': example[0]['n_words'],
+        }
+
+        for i in range(len(statements)):
+            definition_ids, statement_texts = zip(*[(j, s) for j, s in statements[i:] + statements[:i]])
+
+            new_example["definition_ids"] = definition_ids
+            new_example["statements"] = '\n'.join([f"    {k}) {v}" for k, v in zip(statement_keys, statement_texts)])
+
+            turns = [{'role':'user', 'content':prompt.format(**new_example)}]
             input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(llm_model.device)
 
             outputs = llm_model.generate(
                 input_ids,
                 generation_config
             )
-            
+
             example['question'] = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
             example['answer'] = tokenizer.decode(outputs[0, input_ids.shape[1]:]).strip()
 
             results.append(dict(example))
             write_jsonl(script_config.result_path, results)
 
-#  python -m src.raw_explanations --result_path="results/raw_explanations/llama3-8b_base_n20.jsonl" --model_name="meta-llama/Meta-Llama-3-8B-Instruct"
+#  python -m src.raw_explanations_mcq --result_path="results/raw_explanations/llama3-8b_base_n20_mcq.jsonl" --model_name="meta-llama/Meta-Llama-3-8B-Instruct"
