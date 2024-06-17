@@ -89,7 +89,12 @@ answer_pattern = re.compile(r"\[([^\]]+)\]")
 with torch.no_grad():
     for example in tqdm(examples.values()):
 
-        statements = [(statement["definition_id"], answer_pattern.findall(statement["answer"])[0]) for statement in example]
+        statements = []
+        for statement in example:
+            s = answer_pattern.findall(statement["answer"])
+            if len(s) == 0:
+                s.append('')
+            statements.append((statement["definition_id"], s[0]))
 
         new_example = {
             'example_id': example[0]['example_id'],
