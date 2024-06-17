@@ -1,0 +1,9 @@
+Here is a tweet:
+
+"{text}"
+
+Choose the most accurate statement from the list below.
+
+{statements}
+
+You can only choose one. Put your choice in [].
