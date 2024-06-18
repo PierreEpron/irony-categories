@@ -15,7 +15,7 @@ from tqdm import tqdm
 import torch
 
 from src.preprocessing import SemEval
-from src.utils import get_hf_token, write_jsonl
+from src.utils import get_hf_token, read_jsonl, write_jsonl
 from src import model as M
 
 
@@ -78,12 +78,18 @@ generation_config = GenerationConfig(
   pad_token_id=tokenizer.pad_token_id,
 )
 
-results = []
+result_path = Path(script_config.result_path)
+results = read_jsonl(result_path) if result_path.is_file() else []
 
 with torch.no_grad():
     for example in tqdm(examples):
+
+        if len(list(filter(lambda x: x['example_id'] == example['example_id']))) == len(definitions):
+            print("skipped", example['example_id'])
+            continue
+
         for i, definition in enumerate(definitions):
-            
+                
             example["n_words"] = script_config.n_words
             example["definition_id"] = i
             example["definition"] = definition
