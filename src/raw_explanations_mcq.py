@@ -90,7 +90,7 @@ answer_pattern = re.compile(r"\[([^\]]+)\]")
 with torch.no_grad():
     for example in tqdm(examples.values()):
 
-        if len(list(filter(lambda x: x['example_id'] == example[0]['example_id']))) == 1:
+        if len(list(filter(lambda x: x['example_id'] == example[0]['example_id'], results))) == 1:
             print("skipped", example[0]['example_id'])
             continue
 
