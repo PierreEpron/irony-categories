@@ -84,7 +84,7 @@ results = read_jsonl(result_path) if result_path.is_file() else []
 with torch.no_grad():
     for example in tqdm(examples):
 
-        if len(list(filter(lambda x: x['example_id'] == example['example_id'], results))) == len(definitions):
+        if len(list(filter(lambda x: x['example_id'] == example['example_id'], results))) >= len(definitions):
             print("skipped", example['example_id'])
             continue
 
