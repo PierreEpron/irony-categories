@@ -80,7 +80,8 @@ generation_config = GenerationConfig(
   pad_token_id=tokenizer.pad_token_id,
 )
 
-results = []
+result_path = Path(script_config.result_path)
+results = read_jsonl(result_path) if result_path.is_file() else []
 
 statement_keys = "abcd"
 answer_pattern = re.compile(r"\[([^\]]+)\]")
@@ -88,6 +89,10 @@ answer_pattern = re.compile(r"\[([^\]]+)\]")
 
 with torch.no_grad():
     for example in tqdm(examples.values()):
+
+        if len(list(filter(lambda x: x['example_id'] == example[0]['example_id']))) == 1:
+            print("skipped", example[0]['example_id'])
+            continue
 
         statements = []
         for statement in example:
