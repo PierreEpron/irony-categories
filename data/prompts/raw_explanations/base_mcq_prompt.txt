@@ -6,4 +6,4 @@ Choose the most accurate statement from the list below.
 
 {statements}
 
-You can only choose one. Put your choice in [].
+You can only choose one. Put the letter you've chosen in brackets: (x).
