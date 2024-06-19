@@ -23,7 +23,8 @@ from src import model as M
 @dataclass
 class ScriptConfig:
     result_path: str = field(metadata={"help":"."})
-    prompt_path: Optional[str] = field(metadata={"help":"."})
+    prompt_path: str = field(metadata={"help":"."})
+    sharded: Optional[bool] = field(default=False, metadata={"help":"."})
     # Generation
     max_new_tokens: Optional[int] = field(default=512, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"}),
     do_sample: Optional[bool] = field(default=True, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"}),
@@ -38,7 +39,7 @@ llm_config, script_config = parser.parse_args_into_dataclasses()
 
 
 torch_dtype = torch.bfloat16
-device_map = "auto"
+device_map = "auto" if script_config.sharded else {"":0}
 
 tokenizer = AutoTokenizer.from_pretrained(llm_config.model_name, padding_side="left", token=get_hf_token())
 tokenizer.use_default_system_prompt = False
