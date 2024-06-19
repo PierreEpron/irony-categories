@@ -26,10 +26,10 @@ class ScriptConfig:
     prompt_path: str = field(metadata={"help":"."})
     sharded: Optional[bool] = field(default=False, metadata={"help":"."})
     # Generation
-    max_new_tokens: Optional[int] = field(default=512, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"}),
-    do_sample: Optional[bool] = field(default=True, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"}),
-    temperature: Optional[float] = field(default=0.6, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"}),
-    top_p: Optional[float] = field(default=0.9, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"}),
+    max_new_tokens: Optional[int] = field(default=512, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
+    do_sample: Optional[bool] = field(default=True, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
+    temperature: Optional[float] = field(default=0.6, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
+    top_p: Optional[float] = field(default=0.9, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
 
 parser = HfArgumentParser([M.PretrainedLLMConfig, ScriptConfig])
 llm_config, script_config = parser.parse_args_into_dataclasses()
