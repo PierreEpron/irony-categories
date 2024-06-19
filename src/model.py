@@ -251,7 +251,7 @@ class LLMClassifier(L.LightningModule):
 
             if path.is_file():
                 self.peft_config = PeftConfig(**json.loads(path.read_text(encoding='utf-8')))
-                self.peft_config.inference_mode = peft_config.inference_mode
+                self.peft_config.inference_mode = peft_config.inference_mode if peft_config else self.peft_config.inference_mode
                 if self.peft_config.use_lora:                
                     self.llm_model = PeftModel.from_pretrained(self.llm_model, peft_model_name, is_trainable=not self.peft_config.inference_mode)
 
