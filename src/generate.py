@@ -60,6 +60,7 @@ llm_model = AutoModelForCausalLM.from_pretrained(
     torch_dtype=torch_dtype,
     token=get_hf_token()
 )
+llm_model.eval()
 
 
 # Load correct data
