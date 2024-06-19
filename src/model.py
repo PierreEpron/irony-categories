@@ -46,6 +46,7 @@ class PretrainedLLMConfig:
 @dataclass
 class PeftConfig:
 
+    peft_model_name: Optional[str] = field(default=None, metadata={"help": "existing adapter to load. Will create a new one if `None`"})
     use_lora: Optional[bool] = field(default=True, metadata={"help": "Either to add or not a LoRA adapter to the LLM. If False all the other parameters are useless."})
     lora_r: Optional[int] = field(default=64, metadata={"help": "the r parameter of the LoRA adapter"})
     lora_alpha: Optional[int] = field(default=16, metadata={"help": "the alpha parameter of the LoRA adapter"})
@@ -195,6 +196,8 @@ class LLMClassifier(L.LightningModule):
 
         self.training_config = training_config
 
+        peft_model_name = peft_config.peft_model_name if peft_config else peft_model_name
+
         self.load_llm(llm_config, device_map=device_map, torch_dtype=torch_dtype, hf_token=hf_token)
         self.load_adapter(peft_config, peft_model_name)
         self.load_classifier(clf_config, clf_model_name)
@@ -241,7 +244,17 @@ class LLMClassifier(L.LightningModule):
     def load_adapter(self, peft_config = None, peft_model_name = None):
         assert not peft_config or not peft_model_name, f"Both `peft_config` and `peft_model_name` are not None/False."
 
-        if peft_config:
+        if peft_model_name:
+            path = Path(peft_model_name) if isinstance(peft_model_name, str) else peft_model_name
+            path = path / "peft_config.json"
+
+            if path.is_file():
+                self.peft_config = PeftConfig(**json.loads(path.read_text(encoding='utf-8')))
+                self.peft_config.inference_mode = peft_config.inference_mode
+                if self.peft_config.use_lora:                
+                    self.llm_model = PeftModel.from_pretrained(self.llm_model, peft_model_name, is_trainable=not self.peft_config.inference_mode)
+
+        elif peft_config:
             self.peft_config = peft_config
             if self.peft_config.use_lora:
                 self.llm_model = get_peft_model(self.llm_model, LoraConfig(
@@ -252,15 +265,6 @@ class LLMClassifier(L.LightningModule):
                     bias=self.peft_config.lora_bias,
                     inference_mode=self.peft_config.inference_mode
                 ))
-
-        elif peft_model_name:
-            path = Path(peft_model_name) if isinstance(peft_model_name, str) else peft_model_name
-            path = path / "peft_config.json"
-
-            if path.is_file():
-                self.peft_config = PeftConfig(**json.loads(path.read_text(encoding='utf-8')))
-                if self.peft_config.use_lora:                
-                    self.llm_model = PeftModel.from_pretrained(self.llm_model, peft_model_name, is_trainable=not self.peft_config.inference_mode)
 
     def load_classifier(self, clf_config=None, clf_model_name=None):
         assert not clf_config or not clf_model_name, f"Both `clf_config` and `clf_model_name` are not None/False."
