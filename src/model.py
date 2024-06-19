@@ -242,7 +242,8 @@ class LLMClassifier(L.LightningModule):
                 param.requires_grad = True
 
     def load_adapter(self, peft_config = None, peft_model_name = None):
-        assert not peft_config or not peft_model_name, f"Both `peft_config` and `peft_model_name` are not None/False."
+        # Comment for now 
+        # assert not peft_config or not peft_model_name, f"Both `peft_config` and `peft_model_name` are not None/False."
 
         if peft_model_name:
             path = Path(peft_model_name) if isinstance(peft_model_name, str) else peft_model_name
