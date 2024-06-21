@@ -15,6 +15,7 @@ from transformers import (
 from tqdm import tqdm
 import torch
 
+from postprocessing import VALID_MAP
 from src.utils import get_hf_token, read_jsonl, write_jsonl
 from src.preprocessing import SemEval
 from src import model as M
@@ -25,6 +26,9 @@ class ScriptConfig:
     result_path: str = field(metadata={"help":"."})
     prompt_path: str = field(metadata={"help":"."})
     sharded: Optional[bool] = field(default=False, metadata={"help":"."})
+    return_sets: Optional[bool] = field(default='full', metadata={"help":"['full', 'test']"})
+    max_try: Optional[int] = field(default=10, metadata={"help":"."})
+    valid_answer: Optional[str] = field(default=None, metadata={"help":"[None, 'text']"})
     # Generation
     max_new_tokens: Optional[int] = field(default=512, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
     do_sample: Optional[bool] = field(default=True, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
@@ -65,8 +69,11 @@ llm_model.eval()
 
 # Load correct data
 
+if script_config.return_sets == 'full':
+    examples = SemEval.load_data(return_sets="full", urls=False, lower=False)
+elif script_config.return_sets == 'test':
+    _, examples = SemEval.load_data(return_sets="splits", urls=False, lower=False)
 
-_, examples = SemEval.load_data(return_sets="splits", urls=False, lower=False)
 examples = examples.to_dict(orient='records')
 
 prompt = Path(script_config.prompt_path).read_text()
@@ -89,23 +96,26 @@ results = read_jsonl(result_path) if result_path.is_file() else []
 
 with torch.no_grad():
     for example in tqdm(examples):
+        for i in range(script_config.max_try):
 
-        if len(list(filter(lambda x: x['example_id'] == example['example_id'], results))) >= 1:
-            print("skipped", example['example_id'])
-            continue
+            if len(list(filter(lambda x: x['example_id'] == example['example_id'], results))) >= 1:
+                print("skipped", example['example_id'])
+                continue
 
-        turns = [{'role':'user', 'content':prompt.format(**example)}]
-        input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(llm_model.device)
+            turns = [{'role':'user', 'content':prompt.format(**example)}]
+            input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(llm_model.device)
 
-        outputs = llm_model.generate(
-            input_ids,
-            generation_config
-        )
+            outputs = llm_model.generate(
+                input_ids,
+                generation_config
+            )
 
-        example['question'] = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
-        example['answer'] = tokenizer.decode(outputs[0, input_ids.shape[1]:]).strip()
+            example['question'] = tokenizer.decode(outputs[0, :input_ids.shape[1]]).strip()
+            example['answer'] = tokenizer.decode(outputs[0, input_ids.shape[1]:]).strip()
 
-        results.append(example)
-        write_jsonl(script_config.result_path, results)
+            if script_config.valid_answer and VALID_MAP[script_config.valid_answer](example['answer']):
+                results.append(example)
+                write_jsonl(script_config.result_path, results)
+                break
 
 #  python -m src.generate --result_path="results/llama3-8b_json-free.jsonl" --prompt_path="data/prompts/json/free.txt" --model_name="meta-llama/Meta-Llama-3-8B-Instruct" --max_new_tokens=1024
