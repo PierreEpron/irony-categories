@@ -1,8 +1,6 @@
 from dataclasses import dataclass, field
-from collections import defaultdict
 from typing import Optional
 from pathlib import Path
-import re
 
 from transformers import (
     HfArgumentParser,
@@ -15,8 +13,8 @@ from transformers import (
 from tqdm import tqdm
 import torch
 
-from postprocessing import VALID_MAP
 from src.utils import get_hf_token, read_jsonl, write_jsonl
+from src.postprocessing import VALID_MAP
 from src.preprocessing import SemEval
 from src import model as M
 
