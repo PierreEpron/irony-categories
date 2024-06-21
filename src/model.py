@@ -60,6 +60,7 @@ class TrainingConfig:
 
     result_path: str = field(metadata={"help":"The path used to store results"})
     dataset: Optional[str] = field(default="semeval", metadata={"help":"The dataset used to train the model."})
+    chat_template: Optional[bool] = field(default=True, metadata={"help":"Should the text be tokenized with the chat template or not."})
     current_split: Optional[int] = field(default=-1, metadata={"help": "The cross validation split to use (between 0 and 4). -1 is used to run on all splits"})
     split_path: Optional[str] = field(default="data/sem_eval/splits.jsonl", metadata={"help":"The jsonl file path containing the cross validation split indices"})
     clf_class: Optional[str] = field(default="ff", metadata={"help":"Keyword used to recover correct classifier class: [ff, mlp]"})

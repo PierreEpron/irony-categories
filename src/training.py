@@ -45,9 +45,9 @@ def train_model(llm_config, peft_config, clf_config, training_config):
 
     turns = [{"role": "user", "content": "{text}"}]
 
-    train_set = P.make_dataset(train, tokenizer, turns, max_len=training_config.max_len)
-    val_set = P.make_dataset(val, tokenizer, turns, max_len=training_config.max_len)
-    test_set = P.make_dataset(test, tokenizer, turns, max_len=training_config.max_len)
+    train_set = P.make_dataset(train, tokenizer, turns, max_len=training_config.max_len, chat_template=training_config.chat_template)
+    val_set = P.make_dataset(val, tokenizer, turns, max_len=training_config.max_len, chat_template=training_config.chat_template)
+    test_set = P.make_dataset(test, tokenizer, turns, max_len=training_config.max_len, chat_template=training_config.chat_template)
 
     # print(f"{len(train_set)}/{len(train)}, {len(val_set)}/{len(val)}, {len(test_set)}/{len(test)}")
 
