@@ -24,7 +24,7 @@ class ScriptConfig:
     result_path: str = field(metadata={"help":"."})
     prompt_path: str = field(metadata={"help":"."})
     sharded: Optional[bool] = field(default=False, metadata={"help":"."})
-    return_sets: Optional[bool] = field(default='full', metadata={"help":"['full', 'test']"})
+    return_sets: Optional[str] = field(default='full', metadata={"help":"['full', 'test']"})
     max_try: Optional[int] = field(default=10, metadata={"help":"."})
     valid_answer: Optional[str] = field(default=None, metadata={"help":"[None, 'text']"})
     # Generation
