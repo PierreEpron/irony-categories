@@ -145,14 +145,18 @@ class GoEmotions:
         return y
 
 
-def tokenize_example(example, tokenizer, turns, num_classes=4):
-    
-    # Copy and format turns
-    turns = [{'role':turn['role'], 'content':turn['content'].format(**example)} for turn in turns]
+def tokenize_example(example, tokenizer, turns, num_classes=4, chat_template=True):
 
-    # Apply chat template
-    input_ids = tokenizer.apply_chat_template(turns)
-    example['input_ids'] = input_ids
+    if chat_template:    
+        # Copy and format turns
+        turns = [{'role':turn['role'], 'content':turn['content'].format(**example)} for turn in turns]
+
+        # Apply chat template
+        input_ids = tokenizer.apply_chat_template(turns)
+        example['input_ids'] = input_ids
+    else:
+        input_ids = tokenizer.encode(example['text'])
+        example['input_ids'] = input_ids
 
     # Create attention mask
     example['attention_mask'] = [1] * len(input_ids)
@@ -166,13 +170,13 @@ def tokenize_example(example, tokenizer, turns, num_classes=4):
 
     return example
 
-def make_dataset(examples, tokenizer, turns, max_len=105, num_classes=4):
+def make_dataset(examples, tokenizer, turns, max_len=105, num_classes=4, chat_template=True):
 
     if isinstance(examples, pd.DataFrame):
         examples = examples.to_dict(orient="records")
 
     examples = Dataset.from_list(examples)
-    examples = examples.map(lambda x: tokenize_example(x, tokenizer, turns, num_classes))
+    examples = examples.map(lambda x: tokenize_example(x, tokenizer, turns, num_classes, chat_template))
 
     if max_len > 0:
         examples = examples.filter(lambda x: len(x['input_ids']) < max_len)
