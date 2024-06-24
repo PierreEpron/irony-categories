@@ -1,0 +1,4 @@
+[
+    {"role":"assistant", "content":"{previous_text_content}"},
+    {"role":"user", "content":"{text_content}"}
+]

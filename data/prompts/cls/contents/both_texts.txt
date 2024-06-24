@@ -1,0 +1,3 @@
+{previous_text}
+
+{text}
