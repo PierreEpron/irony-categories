@@ -229,7 +229,7 @@ class SemEval(DataManager):
 
     # Old way of loading data
     @staticmethod
-    def preprocess_data(
+    def load_raw_data(
             return_sets : str = 'all', 
             hashtag_labels = ' ', 
             hashtag_nots = 'not',

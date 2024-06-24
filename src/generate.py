@@ -68,9 +68,9 @@ llm_model.eval()
 # Load correct data
 
 if script_config.return_sets == 'full':
-    examples = SemEval.load_data(return_sets="full", urls=False, lower=False)
+    examples = SemEval.load_raw_data(return_sets="full", urls=False, lower=False)
 elif script_config.return_sets == 'test':
-    _, examples = SemEval.load_data(return_sets="splits", urls=False, lower=False)
+    _, examples = SemEval.load_raw_data(return_sets="splits", urls=False, lower=False)
 
 examples = examples.to_dict(orient='records')
 
