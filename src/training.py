@@ -11,7 +11,7 @@ from src.tools.split_data import get_split
 from src.utils import get_hf_token, write_jsonl
 
 
-def train_model(llm_config, peft_config, clf_config, training_config):
+def train_model(llm_config, peft_config, clf_config, training_config, data_config):
 
     ##### Load tokenizer and model #####
 
@@ -23,6 +23,7 @@ def train_model(llm_config, peft_config, clf_config, training_config):
         clf_config=clf_config, 
         peft_config=peft_config, 
         training_config=training_config, 
+        data_config=data_config,
         hf_token=get_hf_token()
     )
 
@@ -33,31 +34,11 @@ def train_model(llm_config, peft_config, clf_config, training_config):
 
     ##### Load and preprocess data #####
 
-    if training_config.dataset == 'semeval':
-        train, test = P.SemEval.load_data(return_sets="splits", urls=False, lower=False)
-        train, val = get_split(training_config.current_split, training_config.split_path, train)
-
-    elif training_config.dataset == 'goemotions':
-        train, val, test = P.GoEmotions.load_data(return_sets='splits')
-
-    else:
+    if data_config.dataset not in P.MANAGER_CLASS_MAP:
         raise AttributeError(f"`training_config.dataset` should be equal to ['semeval', 'goemotions'] not to {training_config.dataset}")
 
-    turns = [{"role": "user", "content": "{text}"}]
-
-    train_set = P.make_dataset(train, tokenizer, turns, max_len=training_config.max_len, chat_template=training_config.chat_template)
-    val_set = P.make_dataset(val, tokenizer, turns, max_len=training_config.max_len, chat_template=training_config.chat_template)
-    test_set = P.make_dataset(test, tokenizer, turns, max_len=training_config.max_len, chat_template=training_config.chat_template)
-
-    # print(f"{len(train_set)}/{len(train)}, {len(val_set)}/{len(val)}, {len(test_set)}/{len(test)}")
-
-    train_loader = P.make_loader(train_set, tokenizer, training_config.train_batch_size, False, True)
-    val_loader = P.make_loader(val_set, tokenizer, training_config.val_batch_size, False, False)
-    test_loader = P.make_loader(test_set, tokenizer, training_config.test_batch_size, True, False)
-
-    # print(next(iter(train_loader)).keys())
-    # print(next(iter(test_loader)).keys())
-    # print(next(iter(train_loader))['input_ids'].shape)
+    data_manager = P.MANAGER_CLASS_MAP[data_config.dataset](tokenizer, data_config)
+    train_loader, val_loader, test_loader = data_manager.get_data_loaders()
 
     ##### Train model #####
 
@@ -92,9 +73,9 @@ def train_model(llm_config, peft_config, clf_config, training_config):
     )
     write_jsonl(Path(training_config.result_path) / "predictions.jsonl", predictions)
 
-def run(llm_config, peft_config, clf_config, training_config):
+def run(llm_config, peft_config, clf_config, training_config, data_config):
     
-    if training_config.current_split == -1:
+    if data_config.current_split == -1:
 
         base_path = Path(training_config.result_path)
 
@@ -102,9 +83,9 @@ def run(llm_config, peft_config, clf_config, training_config):
             base_path.mkdir()
 
         for i in range(5):  
-            training_config.current_split = i
+            data_config.current_split = i
             training_config.result_path = str(base_path / f"{base_path.parts[-1]}_{i}")  
-            train_model(llm_config, peft_config, clf_config, training_config)
+            train_model(llm_config, peft_config, clf_config, training_config, data_config)
 
     else:
-        train_model(llm_config, peft_config, clf_config, training_config)
+        train_model(llm_config, peft_config, clf_config, training_config, data_config)

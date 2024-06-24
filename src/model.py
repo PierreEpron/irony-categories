@@ -13,13 +13,14 @@ import lightning as L
 import numpy as np
 import torch
 
+from src.preprocessing import DataConfig
 from src.evaluation import hamming_score
 
 
 @dataclass
 class FFClassifierConfig:
     input_size: Optional[int] = field(default=4096, metadata={"help":"Size of input. Should be equal to the hidden_states size of the LLM used as input."})
-    num_labels: Optional[int] = field(default=4, metadata={"help":"Number of labels. Used as output size of logits."})
+    num_logits: Optional[int] = field(default=4, metadata={"help":"Number of labels. Used as output size of logits."})
     hidden_states_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states block to use as input for classification."})
     cls_token_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states token to use as input for classification."})
 
@@ -27,7 +28,7 @@ class FFClassifierConfig:
 class MLPClassifierConfig:
     input_size: Optional[int] = field(default=4096, metadata={"help":"Size of input. Should be equal to the hidden_states size of the LLM used as input."})
     n_layers: Optional[int] = field(default=1, metadata={"help":"Number of hidden layers before output layer. Input is divided by 2 for each layer."})
-    num_labels: Optional[int] = field(default=4, metadata={"help":"Number of labels. Used as output size of logits."})
+    num_logits: Optional[int] = field(default=4, metadata={"help":"Number of labels. Used as output size of logits."})
     dropout_rate: Optional[float] = field(default=0.5, metadata={"help":"Dropout rate to use for each dropout layer of the classifier. A dropout layer is added after the activation function of each hidden layer."})
     hidden_states_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states block to use as input for classification."})
     cls_token_idx: Optional[int] = field(default=-1, metadata={"help":"Index of hidden_states token to use as input for classification."})
@@ -59,10 +60,6 @@ class PeftConfig:
 class TrainingConfig:
 
     result_path: str = field(metadata={"help":"The path used to store results"})
-    dataset: Optional[str] = field(default="semeval", metadata={"help":"The dataset used to train the model."})
-    chat_template: Optional[bool] = field(default=True, metadata={"help":"Should the text be tokenized with the chat template or not."})
-    current_split: Optional[int] = field(default=-1, metadata={"help": "The cross validation split to use (between 0 and 4). -1 is used to run on all splits"})
-    split_path: Optional[str] = field(default="data/sem_eval/splits.jsonl", metadata={"help":"The jsonl file path containing the cross validation split indices"})
     clf_class: Optional[str] = field(default="ff", metadata={"help":"Keyword used to recover correct classifier class: [ff, mlp]"})
     lr_peft: Optional[float] = field(default=1.5e-4, metadata={"help":"Learning rate for peft adapater on LLM"})
     lr_clf: Optional[float] = field(default=1e-3, metadata={"help":"Learning rate for classifier"})
@@ -71,10 +68,6 @@ class TrainingConfig:
     max_epochs: Optional[int] = field(default=10, metadata={"help":"Maximum number of epochs"})
     lr_scheduler: Optional[str] = field(default="no", metadata={"help":"Which kind of lr scheduler to use. If `no` don't use one."})
     num_warmup_epoch: Optional[int] = field(default=1, metadata={"help":"If `lr_scheduler` is not `no`. Nb of epochs to use as warmup."})
-    train_batch_size: Optional[int] = field(default=16, metadata={"help":"Size of a train batch"})
-    val_batch_size: Optional[int] = field(default=16, metadata={"help":"Size of a validation batch"})
-    test_batch_size: Optional[int] = field(default=1, metadata={"help":"Size of a test batch"})
-    max_len: Optional[int] = field(default=105, metadata={"help":"Maximum length of a tokenized example. If greater than this length, drop the example."})
     inference_type: Optional[str] = field(default='single_class', metadata={"help":"Define which kind of inference will be use between [`single_class`,`multi_class`]."})
     multi_class_treshold: Optional[float] = field(default=0.5, metadata={"help":"Treshold used by multi class inference."})
 
@@ -112,7 +105,7 @@ class FFClassifer(BaseClassifer):
     def __init__(self, config): 
         super().__init__(config)
         
-        self.output_layer = torch.nn.Linear(self.config.input_size, self.config.num_labels)
+        self.output_layer = torch.nn.Linear(self.config.input_size, self.config.num_logits)
 
     def forward(self, inputs):
 
@@ -148,7 +141,7 @@ class MLPClassifier(BaseClassifer):
             input_size = output_size
 
         self.hidden_layers = torch.nn.ModuleList(self.hidden_layers)
-        self.output_layer = torch.nn.Linear(input_size, self.config.num_labels)
+        self.output_layer = torch.nn.Linear(input_size, self.config.num_logits)
 
     def forward(self, inputs):
 
@@ -188,6 +181,7 @@ class LLMClassifier(L.LightningModule):
         clf_config = None, 
         clf_model_name = None,
         training_config = None,
+        data_config = None,
         device_map={"":0}, 
         torch_dtype=torch.bfloat16, 
         hf_token=None
@@ -196,6 +190,7 @@ class LLMClassifier(L.LightningModule):
         super().__init__()
 
         self.training_config = training_config
+        self.data_config = data_config
 
         peft_model_name = peft_config.peft_model_name if peft_config else peft_model_name
 
@@ -290,6 +285,8 @@ class LLMClassifier(L.LightningModule):
         (path / "peft_config.json").write_text(json.dumps(self.peft_config.__dict__), encoding='utf-8')
         # TODO: Should be optional 
         (path / "training_config.json").write_text(json.dumps(self.training_config.__dict__), encoding='utf-8')
+        (path / "data_config.json").write_text(json.dumps(self.data_config.__dict__), encoding='utf-8')
+        
         if self.peft_config.use_lora:
             self.llm_model.save_pretrained(path)
         self.clf_model.save(path)
@@ -300,7 +297,8 @@ class LLMClassifier(L.LightningModule):
         llm_config = PretrainedLLMConfig(**json.loads((path / "llm_config.json").read_text(encoding='utf-8'))) 
         # TODO: Should be optional 
         training_config = TrainingConfig(**json.loads((path / "training_config.json").read_text(encoding='utf-8')))  
-        return cls(llm_config, clf_model_name=path, peft_model_name=path, training_config=training_config)
+        data_config = DataConfig(**json.loads((path / "data_config.json").read_text(encoding='utf-8')))  
+        return cls(llm_config, clf_model_name=path, peft_model_name=path, training_config=training_config, data_config=data_config)
 
 
     def forward(self, batch, batch_idx):
@@ -474,10 +472,9 @@ class LRSchedulerCallback(L.Callback):
 
         if pl_module.training_config.lr_scheduler == "linear":
             
-            config = pl_module.training_config
-            num_epoch_steps = np.ceil(len(trainer.train_dataloader.dataset) / config.train_batch_size)
-            num_warmup_steps = num_epoch_steps * config.num_warmup_epoch
-            num_training_steps = num_epoch_steps * config.max_epochs
+            num_epoch_steps = np.ceil(len(trainer.train_dataloader.dataset) / pl_module.data_config.train_batch_size)
+            num_warmup_steps = num_epoch_steps * pl_module.training_config.num_warmup_epoch
+            num_training_steps = num_epoch_steps * pl_module.training_config.max_epochs
 
             lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
                 pl_module.optimizers(), 

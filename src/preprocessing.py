@@ -30,6 +30,7 @@ LOADER_MAP = {
 @dataclass
 class DataConfig:
 
+    dataset: Optional[str] = field(default="semeval", metadata={"help":"The dataset used to train the model."})
     train_path: Optional[str] = field(default="data/sem_eval/train_previous_llama3-8b.jsonl", metadata={"help":"."})
     test_path: Optional[str] = field(default="data/sem_eval/test_previous_llama3-8b.jsonl", metadata={"help":"."})
 
