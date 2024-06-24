@@ -25,7 +25,6 @@ def parse_enum(text):
         previous = m
     return outputs
 
-
 def parse_enums(examples):
     outputs = []
 
@@ -36,18 +35,40 @@ def parse_enums(examples):
 
     return outputs
 
+
 def validate_text_answer(answer, min_size=5):
-    text = text_pattern.findall(answer)
-    return len(text) == 1 and len(text[0]) >= min_size
+    matches = text_pattern.findall(answer)
+    return len(matches) == 1 and len(matches[0]) >= min_size
 
 def parse_text_answer(answer):
-    text = text_pattern.findall(answer)
-    return '' if len(text) == 0 else text[0]
+    matches = text_pattern.findall(answer)
+    return '' if len(matches) == 0 else matches[0]
+
+
+def validate_json_answer(answer):
+    matches = json_pattern.findall(answer)
+    if len(matches) > 0:
+        try:
+            json.loads(matches[0].strip())
+            return True
+        except:
+            return False
+
+def parse_json_answer(answer):
+    matches = json_pattern.findall(answer)
+    if len(matches) > 0:
+        try:
+            return json.loads(matches[0].strip())
+        except:
+            return {}
+
 
 VALID_MAP = {
     'text': validate_text_answer,
+    'json': validate_json_answer,
 }
 
 PARSER_MAP = {
     'text': parse_text_answer,
+    'json': parse_json_answer,
 }

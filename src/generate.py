@@ -26,7 +26,7 @@ class ScriptConfig:
     sharded: Optional[bool] = field(default=False, metadata={"help":"."})
     return_sets: Optional[str] = field(default='full', metadata={"help":"['full', 'test']"})
     max_try: Optional[int] = field(default=10, metadata={"help":"."})
-    valid_answer: Optional[str] = field(default=None, metadata={"help":"[None, 'text']"})
+    valid_answer: Optional[str] = field(default=None, metadata={"help":"[None, 'text', 'json']"})
     # Generation
     max_new_tokens: Optional[int] = field(default=512, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
     do_sample: Optional[bool] = field(default=True, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
