@@ -182,14 +182,14 @@ class DataManager:
         test_examples = LOADER_MAP[test_path.suffix](test_path)
 
         # Load splits and split train examples in train/val examples
-        splits_path = Path(self.data_config.data_config.splits_path)
+        splits_path = Path(self.data_config.splits_path)
 
         if splits_path.is_file():
             splits = LOADER_MAP[splits_path.suffix](splits_path)
-            if 0 <= self.data_config.data_config.current_split < len(splits): 
+            if 0 <= self.data_config.current_split < len(splits): 
 
                 train_examples, val_examples = get_split(
-                    self.data_config.data_config.current_split, splits, train_examples
+                    self.data_config.current_split, splits, train_examples
                 )
 
         # Return train/val/test examples
