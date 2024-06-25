@@ -66,7 +66,7 @@ if data_config.dataset not in P.MANAGER_CLASS_MAP:
 
 data_manager = P.MANAGER_CLASS_MAP[data_config.dataset](tokenizer, data_config)
 train_examples, val_examples, test_examples = data_manager.process_data()
-examples = train_examples + val_examples + test_examples
+examples = train_examples.to_list() + val_examples.to_list() + test_examples.to_list()
 
 # Setup generation
 
