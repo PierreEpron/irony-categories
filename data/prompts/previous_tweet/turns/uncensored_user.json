@@ -1,0 +1,4 @@
+[   
+    {"role":"system", "content":"{uncensored_content}"},
+    {"role":"user", "content":"{previous_tweet_content}"}
+]
