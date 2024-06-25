@@ -34,6 +34,7 @@ class DataConfig:
     dataset: Optional[str] = field(default="semeval", metadata={"help":"The dataset used to train the model."})
     train_path: Optional[str] = field(default="data/sem_eval/train_emoji.jsonl", metadata={"help":"."})
     test_path: Optional[str] = field(default="data/sem_eval/test_emoji.jsonl", metadata={"help":"."})
+    additional_context_path: Optional[str] = field(default="", metadata={"help":"."})
 
     contents_path: Optional[str] = field(default="data/prompts/cls/contents/text.txt", metadata={"help":"."})
     turns_path: Optional[str] = field(default="data/prompts/cls/turns/user_text.json", metadata={"help":"."})
@@ -234,20 +235,29 @@ class DataManager:
             shuffle=shuffle
         )
 
+    def load_examples(self, path, additional_context, additional_context_keys):
+        path = Path(path)
+        
+        if path.is_file():
+            examples = LOADER_MAP[path.suffix](path)
+            examples = [example | additional_context[example['example_id']] if example['example_id'] in additional_context else {} for example in examples]
+            return self.clean_texts(examples, keys=['text'] + additional_context_keys)
+        
+        return []
+
     def load_data(self):
 
         train_examples, val_examples, test_examples = [], [], []
 
-        # Load train examples
-        train_path = Path(self.data_config.train_path)
-        if train_path.is_file():
-            train_examples = self.clean_texts(LOADER_MAP[train_path.suffix](train_path))
+        # Load additional context
+        additional_context_path = Path(self.data_config.additional_context_path)
+        additional_context = LOADER_MAP[additional_context_path.suffix](additional_context_path) if additional_context_path.is_file() else {}
+        additional_context_keys = list(list(additional_context.values())[0].keys()) if len(additional_context) > 0 else [] 
 
-        # Load test examples
-        test_path = Path(self.data_config.test_path)
-        if test_path.is_file():
-            test_examples = self.clean_texts(LOADER_MAP[test_path.suffix](test_path))
-        
+        # Load examples
+        train_examples = self.load_examples(self.data_config.train_path, additional_context, additional_context_keys)
+        test_examples = self.load_examples(self.data_config.test_path, additional_context, additional_context_keys)
+
         # Load splits and split train examples in train/val examples
         splits_path = Path(self.data_config.splits_path)
 
