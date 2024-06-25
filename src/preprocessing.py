@@ -41,6 +41,7 @@ class DataConfig:
 
     num_labels: Optional[int] = field(default=4, metadata={"help":"Number of labels. Used as output size of logits."})
     max_len: Optional[int] = field(default=300, metadata={"help":"Maximum length of a tokenized example. If greater than this length, drop the example."})
+    remove_last_token: Optional[bool] = field(default=False, metadata={"help":"Maximum length of a tokenized example. If greater than this length, drop the example."})
 
     train_batch_size: Optional[int] = field(default=16, metadata={"help":"Size of a train batch"})
     val_batch_size: Optional[int] = field(default=16, metadata={"help":"Size of a validation batch"})
@@ -87,9 +88,10 @@ def format_closure(text, content):
 def format_turns(turns, example, contents={}):
     return [{"role":turn["role"], "content":format_closure(turn["content"], example | contents)} for turn in turns]
 
-def tokenize_turns(turns, contents={}):
+def tokenize_turns(turns, contents={}, remove_last_token=False):
     def _tokenize_turns(tokenizer, example, **kwargs):
-        return tokenizer.apply_chat_template(format_turns(turns, example, contents), **kwargs)
+        tokens = tokenizer.apply_chat_template(format_turns(turns, example, contents), **kwargs)
+        return tokens[:-1] if remove_last_token else tokens
     return _tokenize_turns
 
 def tokenize_contents(contents):
@@ -157,7 +159,7 @@ class DataManager:
 
         if turns_path.is_file():
             self.turns = json.loads(turns_path.read_text())
-            self.tokenize_text = tokenize_turns(self.turns, self.contents)
+            self.tokenize_text = tokenize_turns(self.turns, self.contents, self.data_config.remove_last_token)
         else:
             self.tokenize_text = tokenize_contents(list(self.contents.values())[0])
 
