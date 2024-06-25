@@ -20,7 +20,6 @@ from src import model as M
 
 @dataclass
 class ScriptConfig:
-    result_path: str = field(metadata={"help":"."})
     sharded: Optional[bool] = field(default=False, metadata={"help":"."})
     max_try: Optional[int] = field(default=10, metadata={"help":"."})
     valid_answer: Optional[str] = field(default=None, metadata={"help":"[None, 'text', 'json']"})
