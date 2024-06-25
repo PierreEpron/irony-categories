@@ -173,14 +173,19 @@ class DataManager:
         )
 
     def load_data(self):
+
+        train_examples, val_examples, test_examples = [], [], []
+
         # Load train examples
         train_path = Path(self.data_config.train_path)
-        train_examples = LOADER_MAP[train_path.suffix](train_path)
+        if train_path.is_file():
+            train_examples = LOADER_MAP[train_path.suffix](train_path)
 
         # Load test examples
         test_path = Path(self.data_config.test_path)
-        test_examples = LOADER_MAP[test_path.suffix](test_path)
-
+        if test_path.is_file():
+            test_examples = LOADER_MAP[test_path.suffix](test_path)
+        
         # Load splits and split train examples in train/val examples
         splits_path = Path(self.data_config.splits_path)
 

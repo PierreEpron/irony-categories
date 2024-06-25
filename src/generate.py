@@ -15,16 +15,13 @@ import torch
 
 from src.utils import get_hf_token, read_jsonl, write_jsonl
 from src.postprocessing import VALID_MAP
-from src.preprocessing import SemEval
+from src import preprocessing as P
 from src import model as M
-
 
 @dataclass
 class ScriptConfig:
     result_path: str = field(metadata={"help":"."})
-    prompt_path: str = field(metadata={"help":"."})
     sharded: Optional[bool] = field(default=False, metadata={"help":"."})
-    return_sets: Optional[str] = field(default='full', metadata={"help":"['full', 'test']"})
     max_try: Optional[int] = field(default=10, metadata={"help":"."})
     valid_answer: Optional[str] = field(default=None, metadata={"help":"[None, 'text', 'json']"})
     # Generation
@@ -33,12 +30,10 @@ class ScriptConfig:
     temperature: Optional[float] = field(default=0.6, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
     top_p: Optional[float] = field(default=0.9, metadata={"help": "see https://huggingface.co/docs/transformers/v4.41.3/en/main_classes/text_generation#transformers.GenerationConfig"})
 
-parser = HfArgumentParser([M.PretrainedLLMConfig, ScriptConfig])
-llm_config, script_config = parser.parse_args_into_dataclasses()
-
+parser = HfArgumentParser([M.PretrainedLLMConfig,  P.DataConfig, ScriptConfig])
+llm_config, data_config, script_config = parser.parse_args_into_dataclasses()
 
 # Load tokenizer and model
-
 
 torch_dtype = torch.bfloat16
 device_map = "auto" if script_config.sharded else {"":0}
@@ -65,20 +60,16 @@ llm_model = AutoModelForCausalLM.from_pretrained(
 llm_model.eval()
 
 
-# Load correct data
+##### Load and preprocess data #####
 
-if script_config.return_sets == 'full':
-    examples = SemEval.load_raw_data(return_sets="full", urls=False, lower=False)
-elif script_config.return_sets == 'test':
-    _, examples = SemEval.load_raw_data(return_sets="splits", urls=False, lower=False)
+if data_config.dataset not in P.MANAGER_CLASS_MAP:
+    raise AttributeError(f"`data_config.dataset` should be equal to ['semeval', 'goemotions'] not to {data_config.dataset}")
 
-examples = examples.to_dict(orient='records')
-
-prompt = Path(script_config.prompt_path).read_text()
-
+data_manager = P.MANAGER_CLASS_MAP[data_config.dataset](tokenizer, data_config)
+train_examples, val_examples, test_examples = data_manager.process_data()
+examples = train_examples + val_examples + test_examples
 
 # Setup generation
-
 
 generation_config = GenerationConfig(
   max_new_tokens=script_config.max_new_tokens,
@@ -99,12 +90,11 @@ with torch.no_grad():
             if len(list(filter(lambda x: x['example_id'] == example['example_id'], results))) >= 1:
                 print("skipped", example['example_id'])
                 continue
-
-            turns = [{'role':'user', 'content':prompt.format(**example)}]
-            input_ids = tokenizer.apply_chat_template(turns, return_tensors="pt").to(llm_model.device)
+            
+            input_ids = example['input_ids']
 
             outputs = llm_model.generate(
-                input_ids,
+                example['input_ids'],
                 generation_config
             )
 
@@ -118,6 +108,6 @@ with torch.no_grad():
             else:
                 print(example['answer'])
 
-print(len(examples), "/", len(results))
+print(len(results), "/", len(examples))
 
 #  python -m src.generate --result_path="results/llama3-8b_json-free.jsonl" --prompt_path="data/prompts/json/free.txt" --model_name="meta-llama/Meta-Llama-3-8B-Instruct" --max_new_tokens=1024
