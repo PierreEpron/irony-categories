@@ -48,12 +48,12 @@ class DataConfig:
     val_batch_size: Optional[int] = field(default=16, metadata={"help":"Size of a validation batch"})
     test_batch_size: Optional[int] = field(default=1, metadata={"help":"Size of a test batch"})
 
-    hashtag_irony: Optional[bool] = field(True, metadata={"help":"Remove '#irony' during preprocessing. Not sensitive to case."}) 
-    hashtag_sarcasm: Optional[bool] = field(True, metadata={"help":"Remove '#sarcasm' during preprocessing. Not sensitive to case."})
-    hashtag_not: Optional[bool] = field(True, metadata={"help":"Replace '#not' by 'not' during preprocessing. Not sensitive to case."})
-    user_mention: Optional[bool] = field(True, metadata={"help":"Replace '@[user]' by '@user' during preprocessing. Not sensitive to case."})
-    urls: Optional[bool] = field(False, metadata={"help":"Remove '[url]' during preprocessing. Not sensitive to case."})
-    lower: Optional[bool] = field(False, metadata={"help":"Lowercase during preprocessing."})
+    hashtag_irony: Optional[bool] = field(default=True, metadata={"help":"Remove '#irony' during preprocessing. Not sensitive to case."}) 
+    hashtag_sarcasm: Optional[bool] = field(default=True, metadata={"help":"Remove '#sarcasm' during preprocessing. Not sensitive to case."})
+    hashtag_not: Optional[bool] = field(default=True, metadata={"help":"Replace '#not' by 'not' during preprocessing. Not sensitive to case."})
+    user_mention: Optional[bool] = field(default=True, metadata={"help":"Replace '@[user]' by '@user' during preprocessing. Not sensitive to case."})
+    urls: Optional[bool] = field(default=False, metadata={"help":"Remove '[url]' during preprocessing. Not sensitive to case."})
+    lower: Optional[bool] = field(default=False, metadata={"help":"Lowercase during preprocessing."})
 
 def protect_double_brackets(
     text,
