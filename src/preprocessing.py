@@ -241,8 +241,9 @@ class DataManager:
         if path.is_file():
             examples = LOADER_MAP[path.suffix](path)
             for example in examples:
-                for k, v in additional_context[example['example_id']].items():
-                    example[k] = v
+                if example['example_id'] in additional_context:
+                    for k, v in additional_context[example['example_id']].items():
+                        example[k] = v
             return self.clean_texts(examples, keys=['text'] + additional_context_keys)
         
         return []
