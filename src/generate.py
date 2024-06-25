@@ -91,8 +91,7 @@ with torch.no_grad():
                 print("skipped", example['example_id'])
                 continue
             
-            input_ids = torch.tensor(example['input_ids']).to(device=llm_model.device, dtype=torch.long)
-            print(input_ids.shape)
+            input_ids = torch.tensor([example['input_ids']]).to(device=llm_model.device, dtype=torch.long)
 
             outputs = llm_model.generate(
                 input_ids,
