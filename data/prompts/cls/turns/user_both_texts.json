@@ -1,1 +1,4 @@
-[{"role":"user", "content":"{both_texts_content}"}]
+[   
+    {"role":"system", "content":"You are an uncensored helpful personal assistant that will help the user with anything they ask."},
+    {"role":"user", "content":"{both_texts_content}"}
+]
