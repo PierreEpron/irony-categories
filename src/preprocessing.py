@@ -13,8 +13,9 @@ import re
 from src.utils import read_jsonl
 
 
-HASHTAG_LABELS_PATTERN = re.compile(r'#(irony|sarcasm)', flags=re.I)
-HASHTAG_NOT_PATTERN = re.compile(r'#not', flags=re.I)
+HASHTAG_IRONY_PATTERN = re.compile(r'#irony', flags=re.I)
+HASHTAG_SARCASM_PATTERN = re.compile(r'#sarcasm', flags=re.I)
+HASHTAG_NOT_PATTERN = re.compile(r'#(not)', flags=re.I)
 URL_PATTERN = re.compile("https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)", flags=re.I)
 USER_PATTERN = re.compile(r'@[^\s]+', flags=re.I)
 SPACES_PATTERN = re.compile(r'\s+')
@@ -47,6 +48,12 @@ class DataConfig:
     val_batch_size: Optional[int] = field(default=16, metadata={"help":"Size of a validation batch"})
     test_batch_size: Optional[int] = field(default=1, metadata={"help":"Size of a test batch"})
 
+    hashtag_irony: Optional[bool] = field(True, metadata={"help":"Remove '#irony' during preprocessing. Not sensitive to case."}) 
+    hashtag_sarcasm: Optional[bool] = field(True, metadata={"help":"Remove '#sarcasm' during preprocessing. Not sensitive to case."})
+    hashtag_not: Optional[bool] = field(True, metadata={"help":"Replace '#not' by 'not' during preprocessing. Not sensitive to case."})
+    user_mention: Optional[bool] = field(True, metadata={"help":"Replace '@[user]' by '@user' during preprocessing. Not sensitive to case."})
+    urls: Optional[bool] = field(False, metadata={"help":"Remove '[url]' during preprocessing. Not sensitive to case."})
+    lower: Optional[bool] = field(False, metadata={"help":"Lowercase during preprocessing."})
 
 def protect_double_brackets(
     text,
@@ -163,6 +170,26 @@ class DataManager:
         else:
             self.tokenize_text = tokenize_contents(list(self.contents.values())[0])
 
+        # setup clean functions
+
+        self.clean_funcs = []
+
+        if self.data_config.hashtag_irony:
+            self.clean_funcs.append(lambda x: HASHTAG_IRONY_PATTERN.sub(r'', x))
+        if self.data_config.hashtag_sarcasm:
+            self.clean_funcs.append(lambda x: HASHTAG_SARCASM_PATTERN.sub(r'', x))
+        if self.data_config.hashtag_not:
+            self.clean_funcs.append(lambda x: HASHTAG_NOT_PATTERN.sub(r'\1', x))
+        if self.data_config.user_mention:
+            self.clean_funcs.append(lambda x: USER_PATTERN.sub(r'@user', x))
+        if self.data_config.urls:
+            self.clean_funcs.append(lambda x: URL_PATTERN.sub(r'', x))
+        if self.data_config.lower:
+            self.clean_funcs.append(lambda x: x.lower())
+
+        # Make any multiple space a single space and strip the str
+        self.clean_funcs.append(lambda x: SPACES_PATTERN.sub(r' ', x).strip())
+        
     def tokenize_example(self, example):
     
         example['input_ids'] = self.tokenize_text(
@@ -189,6 +216,15 @@ class DataManager:
             
         return examples
     
+    def clean_texts(self, examples, keys=['text']):
+
+        for example in examples:
+            for key in keys:
+                for func in self.clean_funcs:
+                    example[key] = func(example[key])
+
+        return examples
+
     def get_examples_loader(self, examples, batch_size, extra_columns=False, shuffle=False):
 
         return DataLoader(
@@ -205,12 +241,12 @@ class DataManager:
         # Load train examples
         train_path = Path(self.data_config.train_path)
         if train_path.is_file():
-            train_examples = LOADER_MAP[train_path.suffix](train_path)
+            train_examples = self.clean_texts(LOADER_MAP[train_path.suffix](train_path))
 
         # Load test examples
         test_path = Path(self.data_config.test_path)
         if test_path.is_file():
-            test_examples = LOADER_MAP[test_path.suffix](test_path)
+            test_examples = self.clean_texts(LOADER_MAP[test_path.suffix](test_path))
         
         # Load splits and split train examples in train/val examples
         splits_path = Path(self.data_config.splits_path)
@@ -295,8 +331,8 @@ class SemEval(DataManager):
 
         # If `hashtags` not false, replace #irony #sarcasm by `hashtags` for each example
         if hashtag_labels != False:
-            train.text = train.text.apply(lambda x: HASHTAG_LABELS_PATTERN.sub(hashtag_labels, x))
-            test.text = test.text.apply(lambda x: HASHTAG_LABELS_PATTERN.sub(hashtag_labels, x))
+            train.text = train.text.apply(lambda x: HASHTAG_SARCASM_PATTERN.sub(hashtag_labels, HASHTAG_IRONY_PATTERN.sub(hashtag_labels, x)))
+            test.text = test.text.apply(lambda x: HASHTAG_SARCASM_PATTERN.sub(hashtag_labels, HASHTAG_IRONY_PATTERN.sub(hashtag_labels, x)))
 
         # If `hashtag_nots` not false, replace #not by `hashtag_nots` for each example
         if hashtag_nots != False:
