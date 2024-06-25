@@ -1,6 +1,9 @@
-Analyze the tweet below. Output must be in valid JSON like the following example. Output must include only JSON.
-Tweet: {text}
+Here is a tweet:
+
+"{text}"
+
+Analyze the tweet. Output must be in valid JSON like the following example. Output must include only JSON.
 
 '''json
-{{ }}
+{{}}
 '''
