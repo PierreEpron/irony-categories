@@ -32,8 +32,8 @@ LOADER_MAP = {
 class DataConfig:
 
     dataset: Optional[str] = field(default="semeval", metadata={"help":"The dataset used to train the model."})
-    train_path: Optional[str] = field(default="data/sem_eval/train_previous_llama3-8b.jsonl", metadata={"help":"."})
-    test_path: Optional[str] = field(default="data/sem_eval/test_previous_llama3-8b.jsonl", metadata={"help":"."})
+    train_path: Optional[str] = field(default="data/sem_eval/train_emoji.jsonl", metadata={"help":"."})
+    test_path: Optional[str] = field(default="data/sem_eval/test_emoji.jsonl", metadata={"help":"."})
 
     contents_path: Optional[str] = field(default="data/prompts/cls/contents/text.txt", metadata={"help":"."})
     turns_path: Optional[str] = field(default="data/prompts/cls/turns/user_text.json", metadata={"help":"."})
