@@ -47,18 +47,42 @@ class DataConfig:
     test_batch_size: Optional[int] = field(default=1, metadata={"help":"Size of a test batch"})
 
 
-def protect_brackets(text, left_bracket="__LBRACKET__", right_bracket="__RBRACKET__"):
+def protect_double_brackets(
+    text,
+    double_left_bracket="__DLBRACKET__",
+    double_right_bracket="__DRBRACKET__"
+):
+    return text.replace('{{', double_left_bracket).replace('}}', double_right_bracket)
+
+def unprotect_double_brackets(
+    text, 
+    double_left_bracket="__DLBRACKET__", 
+    double_right_bracket="__DRBRACKET__"
+):
+    return text.replace(double_left_bracket, '{{').replace(double_right_bracket, '}}')
+
+def protect_brackets(
+    text, 
+    left_bracket="__LBRACKET__",
+    right_bracket="__RBRACKET__",
+):
     return text.replace('{', left_bracket).replace('}', right_bracket)
 
-def unprotect_brackets(text, left_bracket="__LBRACKET__", right_bracket="__RBRACKET__"):
+def unprotect_brackets(
+    text, 
+    left_bracket="__LBRACKET__", 
+    right_bracket="__RBRACKET__"
+):
     return text.replace(left_bracket, '{').replace(right_bracket, '}')
+
 
 def format_closure(text, content):
     previous_text = None
     while previous_text != text:
+        text = protect_double_brackets(text)
         previous_text = text
         text = text.format(**content)
-    return unprotect_brackets(text)
+    return unprotect_double_brackets(unprotect_brackets(text))
 
 def format_turns(turns, example, contents={}):
     return [{"role":turn["role"], "content":format_closure(turn["content"], example | contents)} for turn in turns]
