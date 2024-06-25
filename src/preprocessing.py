@@ -240,6 +240,7 @@ class DataManager:
         
         if path.is_file():
             examples = LOADER_MAP[path.suffix](path)
+            print(examples[:5])
             examples = [example | additional_context[example['example_id']] if example['example_id'] in additional_context else {} for example in examples]
             print(examples[:5])
             return self.clean_texts(examples, keys=['text'] + additional_context_keys)
