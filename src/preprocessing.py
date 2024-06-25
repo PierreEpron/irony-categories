@@ -60,7 +60,7 @@ def unprotect_double_brackets(
     double_left_bracket="__DLBRACKET__", 
     double_right_bracket="__DRBRACKET__"
 ):
-    return text.replace(double_left_bracket, '{{').replace(double_right_bracket, '}}')
+    return text.replace(double_left_bracket, '{').replace(double_right_bracket, '}')
 
 def protect_brackets(
     text, 
