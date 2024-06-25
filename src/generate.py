@@ -118,4 +118,6 @@ with torch.no_grad():
             else:
                 print(example['answer'])
 
+print(len(examples), "/", len(results))
+
 #  python -m src.generate --result_path="results/llama3-8b_json-free.jsonl" --prompt_path="data/prompts/json/free.txt" --model_name="meta-llama/Meta-Llama-3-8B-Instruct" --max_new_tokens=1024
