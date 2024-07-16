@@ -51,7 +51,7 @@ class DataConfig:
 
     hashtag_irony: Optional[bool] = field(default=True, metadata={"help":"Remove '#irony' during preprocessing. Not sensitive to case."}) 
     hashtag_sarcasm: Optional[bool] = field(default=True, metadata={"help":"Remove '#sarcasm' during preprocessing. Not sensitive to case."})
-    hashtag_not: Optional[bool] = field(default=True, metadata={"help":"Replace '#not' by 'not' during preprocessing. Not sensitive to case."})
+    hashtag_not: Optional[str] = field(default="remove", metadata={"help":"Strategy to use to deal with #sarcasm. `strip` remove '#'. `remove` remove '#not'. Not sensitive to case."})
     user_mention: Optional[bool] = field(default=True, metadata={"help":"Replace '@[user]' by '@user' during preprocessing. Not sensitive to case."})
     urls: Optional[bool] = field(default=False, metadata={"help":"Remove '[url]' during preprocessing. Not sensitive to case."})
     lower: Optional[bool] = field(default=False, metadata={"help":"Lowercase during preprocessing."})
@@ -179,7 +179,9 @@ class DataManager:
             self.clean_funcs.append(lambda x: HASHTAG_IRONY_PATTERN.sub(r'', x))
         if self.data_config.hashtag_sarcasm:
             self.clean_funcs.append(lambda x: HASHTAG_SARCASM_PATTERN.sub(r'', x))
-        if self.data_config.hashtag_not:
+        if self.data_config.hashtag_not == 'remove':
+            self.clean_funcs.append(lambda x: HASHTAG_NOT_PATTERN.sub(r'', x))
+        elif self.data_config.hashtag_not == 'strip':
             self.clean_funcs.append(lambda x: HASHTAG_NOT_PATTERN.sub(r'\1', x))
         if self.data_config.user_mention:
             self.clean_funcs.append(lambda x: USER_PATTERN.sub(r'@user', x))
