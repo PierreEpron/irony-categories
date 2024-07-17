@@ -240,12 +240,18 @@ class DataManager:
     def load_examples(self, path, additional_context, additional_context_keys):
         path = Path(path)
         
+        examples = []
+
         if path.is_file():
-            examples = LOADER_MAP[path.suffix](path)
-            for example in examples:
-                if example['example_id'] in additional_context:
+            if len(additional_context) > 0:
+                for example in LOADER_MAP[path.suffix](path):
+                    assert example['example_id'] in additional_context, f"All `example_id` should be a key of additional context. Missing '{example['example_id']}'"
                     for k, v in additional_context[example['example_id']].items():
-                        example[k] = v
+                        for vv in v:
+                            examples.append(example | {k:vv})
+            else:
+                examples = LOADER_MAP[path.suffix](path)
+
             return self.clean_texts(examples, keys=['text'] + additional_context_keys)
         
         return []
