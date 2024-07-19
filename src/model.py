@@ -384,9 +384,10 @@ class LLMClassifier(L.LightningModule):
 
         predictions = []
 
-        for example_id, label_id, text, labels, scores, pred in zip(
+        for example_id, label_id, previous_text, text, labels, scores, pred in zip(
             batch['example_id'],
             batch['label_id'],
+            batch['previous_text'],
             batch['text'],
             batch['labels'],
             _scores,
@@ -395,6 +396,7 @@ class LLMClassifier(L.LightningModule):
             predictions.append({
                 'example_id':example_id,
                 'label_id':label_id,
+                'previous_text':previous_text,
                 'text':text,
                 'labels':labels.cpu().tolist(),
                 'scores':scores.cpu().tolist(),

@@ -113,7 +113,7 @@ def get_split(split_id, splits, examples, split_keys=["train", "val"]):
 
 
 def collate_key(batch, key):
-  return [ex[key] for ex in batch]
+  return [ex[key] if key in ex else '' for ex in batch]
 
 def pad_key(batch, key, pad_value):
     collated = collate_key(batch, key)
@@ -133,6 +133,7 @@ def collate(tokenizer, extra_columns=False, dtype=torch.long):
             collated_batch.update({
                 'example_id': collate_key(batch, 'example_id'), 
                 'label_id': collate_key(batch, 'label_id'), 
+                'previous_text': collate_key(batch, 'previous_text'),
                 'text': collate_key(batch, 'text')
             })
             
