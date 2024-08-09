@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 
 
+from tqdm import tqdm
 from transformers import AutoTokenizer, HfArgumentParser
 import lightning as L
 
@@ -36,7 +37,7 @@ train_loader, val_loader, test_loader = data_manager.get_data_loaders()
 
 predictions = []
 
-for batch in test_loader:
+for batch in tqdm(test_loader):
 
     outputs = model.llm_model.forward(
         input_ids=batch['input_ids'],
