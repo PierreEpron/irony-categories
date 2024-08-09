@@ -48,7 +48,7 @@ for batch in tqdm(test_loader):
         return_dict=True,
     )
 
-    print(tokenizer.decode(batch['input_ids']))
+    print(tokenizer.batch_decode(batch['input_ids']))
 
     logits = model.clf_model.forward_all_token(outputs)
     _scores, _pred = M.single_class_inference(logits)
