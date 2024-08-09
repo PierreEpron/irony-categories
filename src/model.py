@@ -113,6 +113,10 @@ class FFClassifer(BaseClassifer):
         pooled_logits = logits[:, self.config.cls_token_idx]
         
         return pooled_logits
+    
+    def forward_all_token(self, inputs):
+        logits = self.output_layer(inputs['hidden_states'][self.config.hidden_states_idx])
+        return logits
 
 
 class MLPBlock(torch.nn.Module):

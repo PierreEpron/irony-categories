@@ -12,46 +12,61 @@ from src import preprocessing as P
 from src import model as M
 
 @dataclass
-class InferenceConfig:
+class ScriptConfig:
     result_path: str = field(metadata={"help":"The path used to store results"})
-    dataset: Optional[str] = field(default="semeval", metadata={"help":"The dataset used to train the model."})
-    model_name: Optional[str] = field(default="dummy_ff_0_1E-05_1E-05/dummy_ff_0_1E-05_1E-05_0", metadata={"help": "Pretrain model name for huggingface."})
+    model_path: Optional[str] = field(default="dummy_ff_0_1E-05_1E-05/dummy_ff_0_1E-05_1E-05_0", metadata={"help": "Pretrain model name for huggingface."})
 
-parser = HfArgumentParser([InferenceConfig])
-inference_config = parser.parse_args_into_dataclasses()[0]
+parser = HfArgumentParser([M.PretrainedLLMConfig, P.DataConfig, ScriptConfig])
+llm_config, data_config, script_config = parser.parse_args_into_dataclasses()
 
+if data_config.dataset not in P.MANAGER_CLASS_MAP:
+    raise AttributeError(f"`training_config.dataset` should be equal to ['semeval', 'goemotions'] not to {data_config.dataset}")
 
-if inference_config.dataset == 'semeval':
-    data = P.SemEval.load_data(return_sets="full", urls=False, lower=False).to_dict(orient='records')
+trainer = L.Trainer(
+    log_every_n_steps=1
+)
 
-elif inference_config.dataset == 'goemotions':
-    data = P.GoEmotions.load_data(return_sets='full')
-
-else:
-    raise AttributeError(f"`training_config.dataset` should be equal to ['semeval', 'goemotions'] not to {inference_config.dataset}")
-
-
-model_name = f"results/{inference_config.model_name}"
-
-model = M.LLMClassifier.load(model_name)
+model = M.LLMClassifier.load(script_config.model_path)
 
 tokenizer = AutoTokenizer.from_pretrained(model.llm_config.model_name)
 tokenizer.use_default_system_prompt = False
 
-turns = [{"role": "user", "content": "{text}"}]
+data_manager = P.MANAGER_CLASS_MAP[data_config.dataset](tokenizer, data_config)
+train_loader, val_loader, test_loader = data_manager.get_data_loaders()
 
-data_set = P.make_dataset(data, tokenizer, turns, num_classes=model.clf_config.num_labels, max_len=4096)
+predictions = []
 
-print(len(data_set))
+for batch in test_loader:
 
-data_loader = P.make_loader(data_set, tokenizer, 1, True, False)
+    outputs = model.llm_model.forward(
+        input_ids=batch['input_ids'],
+        attention_mask=batch['attention_mask'],
+        output_hidden_states=True,
+        return_dict=True,
+    )
 
-trainer = L.Trainer()
+    logits = model.clf_model.forward_all_token(outputs)
+    _scores, _pred = M.single_class_inference.inference(logits)
 
-predictions = trainer.predict(
-    model=model, 
-    dataloaders=data_loader, 
-    return_predictions=True
-)
+    for example_id, label_id, previous_text, text, labels, scores, pred in zip(
+        batch['example_id'],
+        batch['label_id'],
+        batch['previous_text'],
+        batch['text'],
+        batch['labels'],
+        _scores,
+        _pred
+    ):
+        predictions.append({
+            'example_id':example_id,
+            'label_id':label_id,
+            'previous_text':previous_text,
+            'text':text,
+            'labels':labels.cpu().tolist(),
+            'scores':scores.cpu().tolist(),
+            'pred':pred.cpu().tolist()
+        })
+        
 
-write_jsonl(Path(inference_config.result_path), predictions)
+
+write_jsonl(Path(script_config.result_path) / "predictions.jsonl", predictions)
