@@ -37,6 +37,8 @@ train_loader, val_loader, test_loader = data_manager.get_data_loaders()
 
 predictions = []
 
+
+
 for batch in tqdm(test_loader):
 
     outputs = model.llm_model.forward(
@@ -45,6 +47,8 @@ for batch in tqdm(test_loader):
         output_hidden_states=True,
         return_dict=True,
     )
+
+    print(tokenizer.decode(batch['input_ids']))
 
     logits = model.clf_model.forward_all_token(outputs)
     _scores, _pred = M.single_class_inference(logits)
