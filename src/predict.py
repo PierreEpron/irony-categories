@@ -46,7 +46,7 @@ for batch in test_loader:
     )
 
     logits = model.clf_model.forward_all_token(outputs)
-    _scores, _pred = M.single_class_inference.inference(logits)
+    _scores, _pred = M.single_class_inference(logits)
 
     for example_id, label_id, previous_text, text, labels, scores, pred in zip(
         batch['example_id'],
